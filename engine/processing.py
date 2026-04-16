@@ -141,6 +141,16 @@ def process_grade_report(df: pd.DataFrame, config: GradeReportConfig = DEFAULT_C
     """Run the full cleaning, parsing, deduping, and scoring pipeline."""
 
     processed = clean_columns(df)
+    return process_mapped_grade_report(processed, config=config)
+
+
+def process_mapped_grade_report(
+    df: pd.DataFrame,
+    config: GradeReportConfig = DEFAULT_CONFIG,
+) -> pd.DataFrame:
+    """Run the report pipeline after columns have already been mapped."""
+
+    processed = df.copy()
     processed = normalize_text_fields(processed)
     processed = convert_numeric_fields(processed)
     processed = parse_dates(processed)

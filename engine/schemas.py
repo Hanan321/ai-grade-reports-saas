@@ -28,6 +28,7 @@ class GradeReportConfig:
     score_weights: Mapping[str, float] | None = None
     low_attendance_threshold: float = 80.0
     at_risk_score_threshold: float = 70.0
+    high_performer_score_threshold: float = 85.0
 
     @property
     def weights(self) -> Mapping[str, float]:
@@ -69,6 +70,20 @@ CANONICAL_COLUMN_ALIASES: dict[str, str] = {
 DEFAULT_CONFIG = GradeReportConfig()
 
 
+CANONICAL_FIELDS: tuple[str, ...] = (
+    "student_id",
+    "student_name",
+    "grade",
+    "subject",
+    "test_date",
+    "homework",
+    "quizscore",
+    "exam_score",
+    "attendance_percent",
+    "notes",
+)
+
+
 def clean_column_name(column: object) -> str:
     """Convert one uploaded column label into a predictable snake_case name."""
 
@@ -84,4 +99,3 @@ def canonicalize_column_name(column: object) -> str:
 
     cleaned = clean_column_name(column)
     return CANONICAL_COLUMN_ALIASES.get(cleaned, cleaned)
-
