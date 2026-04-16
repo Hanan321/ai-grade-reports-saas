@@ -13,13 +13,14 @@ from engine.parent_matching import (
     normalize_student_name,
     prepare_parent_contacts,
 )
+from engine.storage import PARENT_CONTACTS_PATH, ensure_data_dir
 from utils.contact_validators import (
     has_blocking_contact_errors,
     validate_saved_parent_contact,
 )
 
 
-SAVED_PARENT_CONTACTS_PATH = Path("data/parent_contacts.csv")
+SAVED_PARENT_CONTACTS_PATH = PARENT_CONTACTS_PATH
 
 
 def empty_parent_contacts() -> pd.DataFrame:
@@ -31,15 +32,18 @@ def empty_parent_contacts() -> pd.DataFrame:
 def load_saved_parent_contacts(path: Path = SAVED_PARENT_CONTACTS_PATH) -> pd.DataFrame:
     """Load manually saved parent contacts, creating an empty table when missing."""
 
+    ensure_data_dir()
     if not path.exists():
-        return empty_parent_contacts()
+        contacts = empty_parent_contacts()
+        save_parent_contacts(contacts, path=path)
+        return contacts
     return normalize_saved_contact_columns(pd.read_csv(path, dtype=str).fillna(""))
 
 
 def save_parent_contacts(contacts: pd.DataFrame, path: Path = SAVED_PARENT_CONTACTS_PATH) -> None:
     """Persist parent contacts to CSV."""
 
-    path.parent.mkdir(parents=True, exist_ok=True)
+    ensure_data_dir()
     normalize_saved_contact_columns(contacts).to_csv(path, index=False)
 
 

@@ -14,4 +14,4 @@ students_*_cleaned.csv
 students_*_summary_by_student.csv
 students_*_summary_by_subject.csv
 grade_report_outputs.xlsx
-
+data/email_settings.json

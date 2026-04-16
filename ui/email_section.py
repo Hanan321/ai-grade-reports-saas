@@ -7,12 +7,14 @@ import os
 import pandas as pd
 import streamlit as st
 
+from config.default_config import AppConfig
 from engine.email_delivery import (
     DEFAULT_BODY_TEMPLATE,
     DEFAULT_SUBJECT_TEMPLATE,
     SmtpConfig,
     send_parent_report_batch,
 )
+from engine.email_settings import load_email_settings
 from engine.parent_contacts import load_saved_parent_contacts, merge_parent_contacts
 from engine.parent_matching import (
     load_parent_contacts,
@@ -28,7 +30,10 @@ from utils.email_validators import is_valid_email
 TEST_BATCH_LIMIT = 3
 
 
-def render_email_section(reports: list[StudentReportFile]) -> None:
+def render_email_section(
+    reports: list[StudentReportFile],
+    app_config: AppConfig | None = None,
+) -> None:
     """Render the parent email matching, preview, and send workflow."""
 
     st.subheader("Parent Report Emails")
@@ -73,7 +78,7 @@ def render_email_section(reports: list[StudentReportFile]) -> None:
     subject_template = st.text_input("Email subject", value=DEFAULT_SUBJECT_TEMPLATE)
     body_template = st.text_area("Email body", value=DEFAULT_BODY_TEMPLATE, height=180)
 
-    smtp_config, test_email, config_errors = _render_email_config_ui()
+    smtp_config, test_email, config_errors = _render_email_config_ui(app_config)
     if config_errors:
         st.warning("Email sending is disabled until this configuration is complete:")
         for error in config_errors:
@@ -119,7 +124,7 @@ def render_email_section(reports: list[StudentReportFile]) -> None:
             )
 
     if test_disabled and not test_email:
-        st.info("Set TEST_PARENT_REPORT_EMAIL to enable safe test batches.")
+        st.info("Set a test/admin email to enable safe test batches.")
 
     _render_send_results("Test Batch Results", st.session_state.get("test_batch_results"))
     _render_send_results("Parent Batch Results", st.session_state.get("live_batch_results"))
@@ -221,25 +226,47 @@ def _contacts_not_matching_reports(
     return pd.DataFrame(unused_rows, columns=contacts_df.columns)
 
 
-def _render_email_config_ui() -> tuple[SmtpConfig | None, str, list[str]]:
+def _render_email_config_ui(app_config: AppConfig | None = None) -> tuple[SmtpConfig | None, str, list[str]]:
     st.markdown("**Email Sending Settings**")
+    is_school_mode = bool(app_config and app_config.mode == "school")
     config_mode = st.radio(
         "Email configuration source",
-        options=["Use saved secrets/environment", "Enter manually for this session"],
+        options=[
+            "Use saved school email settings" if is_school_mode else "Use saved secrets/environment",
+            "Enter manually for this session",
+        ],
         horizontal=True,
     )
 
-    saved_values = _saved_email_config_values()
+    saved_values = _saved_email_config_values(app_config)
     if config_mode == "Enter manually for this session":
         values = _manual_email_config_values(saved_values)
     else:
         values = saved_values
-        st.caption("Using SMTP values from Streamlit secrets or environment variables.")
+        if is_school_mode:
+            st.caption("Using saved school email settings from data/email_settings.json.")
+        else:
+            st.caption("Using SMTP values from Streamlit secrets or environment variables.")
 
     return _build_smtp_config(values)
 
 
-def _saved_email_config_values() -> dict[str, str]:
+def _saved_email_config_values(app_config: AppConfig | None = None) -> dict[str, str]:
+    if app_config and app_config.mode == "school":
+        stored_settings = load_email_settings()
+        return {
+            "host": stored_settings["host"] or _config_value("SMTP_HOST"),
+            "port": stored_settings["port"] or _config_value("SMTP_PORT", "587"),
+            "sender": stored_settings["sender"]
+            or _config_value("SMTP_SENDER_EMAIL")
+            or _config_value("SMTP_USERNAME"),
+            "username": stored_settings["username"] or _config_value("SMTP_USERNAME"),
+            "password": stored_settings["password"] or _config_value("SMTP_PASSWORD"),
+            "use_tls": stored_settings["use_tls"] or _config_value("SMTP_USE_TLS", "true"),
+            "use_ssl": stored_settings["use_ssl"] or _config_value("SMTP_USE_SSL", "false"),
+            "test_email": stored_settings["test_email"] or _config_value("TEST_PARENT_REPORT_EMAIL"),
+        }
+
     return {
         "host": _config_value("SMTP_HOST"),
         "port": _config_value("SMTP_PORT", "587"),

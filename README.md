@@ -37,15 +37,20 @@ The app currently:
 │   ├── exports.py
 │   ├── parent_contacts.py
 │   ├── parent_matching.py
+│   ├── email_settings.py
+│   ├── storage.py
 │   ├── report_files.py
 │   ├── email_delivery.py
 │   └── schemas.py
 ├── data/
-│   └── parent_contacts.csv
+│   ├── parent_contacts.csv
+│   └── email_settings.json
 ├── ui/
 │   ├── branding.py
 │   ├── styles.py
 │   ├── sections.py
+│   ├── dashboard.py
+│   ├── email_settings_section.py
 │   ├── parent_contacts_section.py
 │   └── email_section.py
 ├── utils/
@@ -126,6 +131,9 @@ School mode enables:
 
 - school name in the app header
 - school-specific colors
+- sidebar navigation for the school dashboard
+- persistent parent contact management before uploading a grade sheet
+- persistent email settings management before uploading a grade sheet
 - configurable report title/header/footer
 - configurable grading weights
 - configurable low-attendance, at-risk, and high-performance thresholds
@@ -144,6 +152,24 @@ high_performer_score_threshold = 90
 ```
 
 Logo display is supported in the app header when `logo_path` points to a local image file. Full logo embedding inside every export is a next-step enhancement; the current MVP applies report title/header/footer text and workbook metadata.
+
+## School Mode Dashboard
+
+In school mode, the sidebar adds these pages:
+
+- **Dashboard**: shows saved student count, saved parent email count, email settings status, and quick actions.
+- **Upload & Reports**: keeps the normal upload, mapping, report generation, downloads, parent contacts, and parent email workflow.
+- **Parent Contacts**: lets you add, edit, delete, and view saved parent contacts without uploading a grade sheet.
+- **Email Settings**: lets you save SMTP settings without uploading a grade sheet.
+
+The dashboard uses simple local files only:
+
+```text
+data/parent_contacts.csv
+data/email_settings.json
+```
+
+The app creates the `data/` folder automatically. `parent_contacts.csv` is created with the expected columns when missing. `email_settings.json` is created when settings are saved from the **Email Settings** page.
 
 ## Supported Columns
 
@@ -279,6 +305,14 @@ Configure SMTP with environment variables or Streamlit secrets. Do not hardcode 
 
 You can also enter SMTP settings manually in the **Parent Emails** tab by choosing **Enter manually for this session** under **Email Sending Settings**. Manual values are session-only and are useful for quick testing on Streamlit Cloud.
 
+In school mode, you can save SMTP settings from **Email Settings** before uploading a grade file. Those settings are stored in:
+
+```text
+data/email_settings.json
+```
+
+The **Parent Emails** tab can then use **Use saved school email settings** so you do not need to re-enter SMTP details after refreshing the app.
+
 Required:
 
 ```text
@@ -330,6 +364,22 @@ Recommended safe flow:
 6. Click **Send Test Batch to Me**.
 7. Check the email body and HTML attachments.
 8. Click **Send All Parent Reports** when ready.
+
+## Testing Persistence In School Mode
+
+Use this flow to confirm local file persistence:
+
+1. Start school mode:
+
+```bash
+APP_MODE=school streamlit run app.py
+```
+
+2. Open **Parent Contacts** and save a test student/parent row.
+3. Refresh the browser. The row should still appear because it was saved to `data/parent_contacts.csv`.
+4. Open **Email Settings** and save test SMTP settings.
+5. Refresh the browser. The settings should reload from `data/email_settings.json`; the password field is visually masked by Streamlit.
+6. Stop and restart Streamlit. The saved files should still be present locally.
 
 ## Run Tests
 
@@ -388,7 +438,11 @@ streamlit run app.py --server.port $PORT --server.address 0.0.0.0
 ## Notes And Limitations
 
 - This MVP does not include authentication, billing, databases, Stripe, or Supabase.
+- School dashboard persistence uses local files, not a database.
+- Local files work well for a single local/admin deployment, but they are not a multi-user storage system.
+- On some hosted platforms, including Streamlit Community Cloud, local file changes can be reset when the app redeploys or the runtime restarts.
+- `data/email_settings.json` may contain an SMTP password or app password in plain local JSON. Treat that file carefully and do not commit real credentials.
 - Date parsing uses pandas with `dayfirst=False`, matching the notebook's assumption.
 - Missing score values count as zero in the final score, matching the notebook.
 - Missing attendance does not automatically trigger `low_attendance`.
-- Batch parent email sending requires SMTP configuration from environment variables or Streamlit secrets.
+- Batch parent email sending requires SMTP configuration from environment variables, Streamlit secrets, manual session entry, or saved school email settings.

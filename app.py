@@ -12,9 +12,12 @@ from engine.processing import load_data, process_mapped_grade_report
 from engine.report_files import build_student_report_files
 from engine.schemas import CANONICAL_FIELDS
 from engine.student_reports import export_student_reports_zip
+from engine.storage import ensure_data_dir
 from engine.summaries import build_student_summary, build_subject_summary
 from ui.branding import render_app_header, render_config_sidebar
+from ui.dashboard import render_school_dashboard
 from ui.email_section import render_email_section
+from ui.email_settings_section import render_email_settings_section
 from ui.parent_contacts_section import render_parent_contacts_section
 from ui.sections import render_validation_summary
 from ui.styles import render_page_styles
@@ -135,6 +138,28 @@ def build_outputs(
 render_page_styles(APP_CONFIG)
 render_config_sidebar(APP_CONFIG)
 render_app_header(APP_CONFIG)
+
+if APP_CONFIG.mode == "school":
+    ensure_data_dir()
+    school_pages = ["Dashboard", "Upload & Reports", "Parent Contacts", "Email Settings"]
+    current_page = st.session_state.get("school_nav", "Dashboard")
+    if current_page not in school_pages:
+        st.session_state.school_nav = "Dashboard"
+    selected_page = st.sidebar.radio(
+        "School Navigation",
+        options=school_pages,
+        key="school_nav",
+    )
+
+    if selected_page == "Dashboard":
+        render_school_dashboard(APP_CONFIG)
+        st.stop()
+    if selected_page == "Parent Contacts":
+        render_parent_contacts_section([])
+        st.stop()
+    if selected_page == "Email Settings":
+        render_email_settings_section()
+        st.stop()
 
 uploaded_file = st.file_uploader("Upload a grade sheet", type=["csv", "xlsx", "xls"])
 
@@ -302,4 +327,4 @@ with tabs[6]:
     render_parent_contacts_section(student_report_files)
 
 with tabs[7]:
-    render_email_section(student_report_files)
+    render_email_section(student_report_files, app_config=APP_CONFIG)
