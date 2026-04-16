@@ -14,12 +14,12 @@ def validate_parent_contact(
     """Return validation errors for one parent contact."""
 
     errors: list[str] = []
+    if not normalize_student_id(student_id):
+        errors.append("Student ID is required for manual parent contacts.")
     if not normalize_student_name(student_name):
         errors.append("Student name cannot be blank.")
     if not is_valid_email(parent_email):
         errors.append("Parent email must be a valid email address.")
-    if not normalize_student_id(student_id):
-        errors.append("Student ID is optional, but adding it is recommended for safer matching.")
     return errors
 
 
@@ -27,6 +27,7 @@ def has_blocking_contact_errors(errors: list[str]) -> bool:
     """Return True when errors should prevent saving."""
 
     blocking_messages = (
+        "Student ID is required for manual parent contacts.",
         "Student name cannot be blank.",
         "Parent email must be a valid email address.",
     )

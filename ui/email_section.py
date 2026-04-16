@@ -33,8 +33,8 @@ def render_email_section(reports: list[StudentReportFile]) -> None:
 
     st.subheader("Parent Report Emails")
     st.caption(
-        "Match generated reports to your maintained parent-contact file, preview every row, "
-        "then send the batch when it looks right."
+        "Match generated reports to your maintained parent-contact file, preview only "
+        "ready-to-send parent emails, then send the batch when it looks right."
     )
 
     contacts_df = _load_contacts_ui()
@@ -58,7 +58,16 @@ def render_email_section(reports: list[StudentReportFile]) -> None:
     metric_cols[2].metric("Unmatched Students", unmatched_count)
     metric_cols[3].metric("Skipped Rows", skipped_count)
 
-    st.dataframe(preview_df, use_container_width=True)
+    ready_to_send_df = preview_df[preview_df["send_eligible"]].reset_index(drop=True)
+    skipped_df = preview_df[~preview_df["send_eligible"]].reset_index(drop=True)
+
+    st.markdown("**Ready To Send Parent Emails**")
+    if ready_to_send_df.empty:
+        st.warning("No matched parent emails are ready to send for this batch.")
+    else:
+        st.dataframe(ready_to_send_df, use_container_width=True)
+
+    _render_skipped_reports(skipped_df)
     _render_contacts_not_used_in_batch(contacts_df, reports)
 
     subject_template = st.text_input("Email subject", value=DEFAULT_SUBJECT_TEMPLATE)
@@ -151,6 +160,18 @@ def _load_contacts_ui() -> pd.DataFrame | None:
     metric_cols[1].metric("Uploaded Contacts", 0 if uploaded_contacts is None else len(uploaded_contacts))
     metric_cols[2].metric("Combined Contacts", len(combined_contacts))
     return combined_contacts
+
+
+def _render_skipped_reports(skipped_df: pd.DataFrame) -> None:
+    if skipped_df.empty:
+        return
+
+    with st.expander("Skipped reports without sendable parent email"):
+        st.caption(
+            "These generated reports are not in the send list because they are unmatched, "
+            "duplicated, or have an invalid/missing parent email."
+        )
+        st.dataframe(skipped_df, use_container_width=True)
 
 
 def _render_contacts_not_used_in_batch(

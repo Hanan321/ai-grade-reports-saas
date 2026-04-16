@@ -46,7 +46,7 @@ def _render_contact_form(contacts: pd.DataFrame, reports: list[StudentReportFile
     )
     with st.form("parent_contact_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
-        student_id = col1.text_input("Student ID", placeholder="Optional, but preferred")
+        student_id = col1.text_input("Student ID", placeholder="Required")
         student_name = col2.text_input("Student name")
         parent_email = col1.text_input("Parent email")
         parent_name = col2.text_input("Parent name", placeholder="Optional")
@@ -83,9 +83,6 @@ def _render_contact_form(contacts: pd.DataFrame, reports: list[StudentReportFile
     else:
         st.success("Parent contact saved.")
 
-    warning_messages = [message for message in messages if "recommended" in message]
-    for message in warning_messages:
-        st.warning(message)
     st.rerun()
 
 

@@ -77,7 +77,7 @@ def test_upsert_rejects_student_id_used_by_different_student_name():
 def test_upsert_rejects_invalid_email():
     contacts, action, messages = upsert_parent_contact(
         pd.DataFrame(),
-        student_id="",
+        student_id="201",
         student_name="Ali Ahmed",
         parent_email="bad-email",
         parent_name="Parent",
@@ -86,6 +86,20 @@ def test_upsert_rejects_invalid_email():
     assert action == "error"
     assert contacts.empty
     assert "Parent email must be a valid email address." in messages
+
+
+def test_upsert_rejects_missing_student_id():
+    contacts, action, messages = upsert_parent_contact(
+        pd.DataFrame(),
+        student_id="",
+        student_name="Ali Ahmed",
+        parent_email="parent@example.com",
+        parent_name="Parent",
+    )
+
+    assert action == "error"
+    assert contacts.empty
+    assert "Student ID is required for manual parent contacts." in messages
 
 
 def test_delete_parent_contact_by_normalized_name():

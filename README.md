@@ -107,12 +107,12 @@ sample_data/students_sample_raw.csv
 
 ## Parent Report Email Workflow
 
-After uploading a grade file and reviewing the column mapping, click **Generate Reports**. The app creates all student HTML reports at once. Open the **Parent Emails** tab to preview the parent-contact match table before any email is sent.
+After uploading a grade file and reviewing the column mapping, click **Generate Reports**. The app creates all student HTML reports at once. Open the **Parent Emails** tab to preview the ready-to-send parent email table before any email is sent.
 
 The preview includes:
 
 - student name
-- student ID when available
+- student ID
 - saved parent email
 - parent name when available
 - matched report filename
@@ -120,7 +120,7 @@ The preview includes:
 - send eligibility
 - skip reason
 
-Click **Send All Parent Reports** only after the preview looks correct. The app sends only rows marked as eligible. Unmatched students, duplicate matches, and invalid parent emails are skipped.
+Click **Send All Parent Reports** only after the preview looks correct. The main email table shows only rows marked as eligible with a valid matched parent email. Unmatched students, duplicate matches, and invalid parent emails are moved into **Skipped reports without sendable parent email** and are not sent.
 
 ## Maintaining Parent Contacts
 
@@ -160,7 +160,7 @@ The form saves:
 - `parent_email`
 - `parent_name`
 
-`student_name` and `parent_email` are required. `student_id` is optional, but recommended because it gives the safest match. If you save a contact with the same `student_id` or normalized `student_name` as an existing saved contact, the app updates the existing row instead of creating an obvious duplicate.
+`student_id`, `student_name`, and `parent_email` are required for manual parent contact entry. If you save a contact with the same `student_id` or normalized `student_name` as an existing saved contact, the app updates the existing row instead of creating an obvious duplicate.
 
 If the current generated reports contain the typed `student_id` for a different student name, the app blocks the save. This prevents a parent email from being attached to the wrong student's report.
 
