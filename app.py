@@ -14,7 +14,7 @@ from engine.schemas import CANONICAL_FIELDS
 from engine.student_reports import export_student_reports_zip
 from engine.storage import ensure_data_dir
 from engine.summaries import build_student_summary, build_subject_summary
-from ui.branding import render_app_header, render_config_sidebar
+from ui.branding import render_app_header, render_config_sidebar, render_scoring_panel
 from ui.dashboard import render_school_dashboard
 from ui.email_section import render_email_section
 from ui.email_settings_section import render_email_settings_section
@@ -151,8 +151,11 @@ def build_outputs(
 
 
 render_page_styles(APP_CONFIG)
-APP_CONFIG = render_config_sidebar(APP_CONFIG)
+if APP_CONFIG.mode == "school":
+    APP_CONFIG = render_config_sidebar(APP_CONFIG)
 render_app_header(APP_CONFIG)
+if APP_CONFIG.mode != "school":
+    APP_CONFIG = render_scoring_panel(APP_CONFIG)
 
 if APP_CONFIG.mode == "school":
     ensure_data_dir()

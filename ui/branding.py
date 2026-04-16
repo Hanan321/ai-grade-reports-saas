@@ -39,13 +39,12 @@ def render_app_header(app_config: AppConfig) -> None:
 
 
 def render_config_sidebar(app_config: AppConfig) -> AppConfig:
-    """Show editable product mode scoring values and return the active config."""
+    """Show school-mode sidebar controls and return the active config."""
 
     with st.sidebar:
         st.subheader("Product Mode")
         st.write(app_config.mode.upper())
-        if app_config.branding.show_branding:
-            st.write(f"School: {app_config.branding.school_name}")
+        st.write(f"School: {app_config.branding.school_name}")
         st.caption("Switch modes with the APP_MODE environment variable.")
 
         st.subheader("Scoring Config")
@@ -54,8 +53,17 @@ def render_config_sidebar(app_config: AppConfig) -> AppConfig:
         return replace(app_config, grade_report=edited_grade_report)
 
 
+def render_scoring_panel(app_config: AppConfig) -> AppConfig:
+    """Render click-to-open scoring controls in the main SaaS workflow."""
+
+    with st.expander("Scoring Config", expanded=False):
+        st.caption("Optional: adjust scoring before uploading or generating reports.")
+        edited_grade_report = render_scoring_controls(app_config.grade_report, mode=app_config.mode)
+    return replace(app_config, grade_report=edited_grade_report)
+
+
 def render_scoring_controls(config: GradeReportConfig, mode: str) -> GradeReportConfig:
-    """Render sidebar controls for score weights and thresholds."""
+    """Render controls for score weights and thresholds."""
 
     weights = config.weights
     homework_weight = st.number_input(

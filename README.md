@@ -125,7 +125,7 @@ SaaS mode uses:
 
 The SaaS workflow is intentionally lightweight: upload a grade sheet, review mapping, generate reports, review summaries, and download the Excel workbook or student report ZIP.
 
-The sidebar scoring values are editable in both SaaS and school mode before report generation:
+The scoring values are editable before report generation. In SaaS mode, click **Scoring Config** on the main page to reveal them. In school mode, they remain in the school sidebar with the admin navigation.
 
 - homework weight
 - quiz score weight
