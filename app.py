@@ -231,9 +231,9 @@ generated_scoring_config = st.session_state.get("generated_scoring_config")
 
 if outputs is None:
     st.markdown(
-'   <p class="muted-note">Review the mapping, then click <strong>Generate Reports</strong>.</p>',
-        unsafe_allow_html=True,        unsafe_allow_html=True,
-    )
+        '<p class="muted-note">Review the mapping, then click <strong>Generate Reports</strong>.</p>',
+        unsafe_allow_html=True,
+        )
     st.stop()
 
 if selected_mapping != generated_mapping:
