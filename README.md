@@ -162,6 +162,8 @@ Parent contact matching is deterministic and uses your saved contact data as the
 
 Configure SMTP with environment variables or Streamlit secrets. Do not hardcode passwords in the repo.
 
+You can also enter SMTP settings manually in the **Parent Emails** tab by choosing **Enter manually for this session** under **Email Sending Settings**. Manual values are session-only and are useful for quick testing on Streamlit Cloud.
+
 Required:
 
 ```text

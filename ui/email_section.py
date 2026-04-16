@@ -62,7 +62,7 @@ def render_email_section(reports: list[StudentReportFile]) -> None:
     subject_template = st.text_input("Email subject", value=DEFAULT_SUBJECT_TEMPLATE)
     body_template = st.text_area("Email body", value=DEFAULT_BODY_TEMPLATE, height=180)
 
-    smtp_config, test_email, config_errors = _load_email_config()
+    smtp_config, test_email, config_errors = _render_email_config_ui()
     if config_errors:
         st.warning("Email sending is disabled until this configuration is complete:")
         for error in config_errors:
@@ -142,15 +142,91 @@ def _load_contacts_ui() -> pd.DataFrame | None:
     return load_parent_contacts(DEFAULT_PARENT_CONTACTS_PATH)
 
 
-def _load_email_config() -> tuple[SmtpConfig | None, str, list[str]]:
-    host = _config_value("SMTP_HOST")
-    port = _config_value("SMTP_PORT", "587")
-    sender = _config_value("SMTP_SENDER_EMAIL") or _config_value("SMTP_USERNAME")
-    username = _config_value("SMTP_USERNAME")
-    password = _config_value("SMTP_PASSWORD")
-    use_tls = _config_value("SMTP_USE_TLS", "true").lower() in {"1", "true", "yes", "on"}
-    use_ssl = _config_value("SMTP_USE_SSL", "false").lower() in {"1", "true", "yes", "on"}
-    test_email = _config_value("TEST_PARENT_REPORT_EMAIL")
+def _render_email_config_ui() -> tuple[SmtpConfig | None, str, list[str]]:
+    st.markdown("**Email Sending Settings**")
+    config_mode = st.radio(
+        "Email configuration source",
+        options=["Use saved secrets/environment", "Enter manually for this session"],
+        horizontal=True,
+    )
+
+    saved_values = _saved_email_config_values()
+    if config_mode == "Enter manually for this session":
+        values = _manual_email_config_values(saved_values)
+    else:
+        values = saved_values
+        st.caption("Using SMTP values from Streamlit secrets or environment variables.")
+
+    return _build_smtp_config(values)
+
+
+def _saved_email_config_values() -> dict[str, str]:
+    return {
+        "host": _config_value("SMTP_HOST"),
+        "port": _config_value("SMTP_PORT", "587"),
+        "sender": _config_value("SMTP_SENDER_EMAIL") or _config_value("SMTP_USERNAME"),
+        "username": _config_value("SMTP_USERNAME"),
+        "password": _config_value("SMTP_PASSWORD"),
+        "use_tls": _config_value("SMTP_USE_TLS", "true"),
+        "use_ssl": _config_value("SMTP_USE_SSL", "false"),
+        "test_email": _config_value("TEST_PARENT_REPORT_EMAIL"),
+    }
+
+
+def _manual_email_config_values(saved_values: dict[str, str]) -> dict[str, str]:
+    st.caption("Manual values are used for this Streamlit session only and are not saved to the repo.")
+    col1, col2 = st.columns([2, 1])
+    host = col1.text_input("SMTP host", value=saved_values["host"], placeholder="smtp.gmail.com")
+    port = col2.text_input("SMTP port", value=saved_values["port"] or "587")
+
+    sender = st.text_input(
+        "Sender email",
+        value=saved_values["sender"],
+        placeholder="teacher@example.com",
+    )
+    username = st.text_input(
+        "SMTP username",
+        value=saved_values["username"],
+        placeholder="teacher@example.com",
+    )
+    password = st.text_input(
+        "SMTP password or app password",
+        value=saved_values["password"],
+        type="password",
+    )
+    test_email = st.text_input(
+        "Test/admin email",
+        value=saved_values["test_email"],
+        placeholder="you@example.com",
+    )
+
+    security = st.selectbox(
+        "SMTP security",
+        options=["STARTTLS", "SSL", "None"],
+        index=_security_index(saved_values),
+    )
+
+    return {
+        "host": host,
+        "port": port,
+        "sender": sender,
+        "username": username,
+        "password": password,
+        "use_tls": "true" if security == "STARTTLS" else "false",
+        "use_ssl": "true" if security == "SSL" else "false",
+        "test_email": test_email,
+    }
+
+
+def _build_smtp_config(values: dict[str, str]) -> tuple[SmtpConfig | None, str, list[str]]:
+    host = values["host"].strip()
+    port = values["port"].strip() or "587"
+    sender = values["sender"].strip()
+    username = values["username"].strip()
+    password = values["password"].strip()
+    use_tls = values["use_tls"].strip().lower() in {"1", "true", "yes", "on"}
+    use_ssl = values["use_ssl"].strip().lower() in {"1", "true", "yes", "on"}
+    test_email = values["test_email"].strip()
 
     errors: list[str] = []
     if not host:
@@ -184,6 +260,16 @@ def _load_email_config() -> tuple[SmtpConfig | None, str, list[str]]:
         test_email,
         [],
     )
+
+
+def _security_index(values: dict[str, str]) -> int:
+    use_ssl = values["use_ssl"].strip().lower() in {"1", "true", "yes", "on"}
+    use_tls = values["use_tls"].strip().lower() in {"1", "true", "yes", "on"}
+    if use_ssl:
+        return 1
+    if use_tls:
+        return 0
+    return 2
 
 
 def _config_value(name: str, default: str = "") -> str:
