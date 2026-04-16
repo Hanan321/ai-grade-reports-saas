@@ -168,7 +168,7 @@ The form saves:
 
 If the current generated reports contain the typed `student_id` for a different student name, the app blocks the save. This prevents a parent email from being attached to the wrong student's report.
 
-The same tab also shows the saved contact table and lets you delete a saved contact.
+The same tab also shows the saved contact table. Choose a saved contact to edit Parent 1, add or edit Parent 2, change the student details, or delete that saved contact.
 
 The **Parent Emails** tab always includes saved contacts from `data/parent_contacts.csv`. You can also add an uploaded parent contacts CSV for the current session. The app expands `parent1_email` and `parent2_email` into separate recipients for sending. When the same student and same parent email appears in both places, the saved/manual contact from `data/parent_contacts.csv` takes priority over the uploaded CSV row.
 

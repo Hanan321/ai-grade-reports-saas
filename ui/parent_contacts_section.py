@@ -35,7 +35,7 @@ def render_parent_contacts_section(reports: list[StudentReportFile]) -> None:
         st.info("No saved parent contacts yet. Add one with the form above.")
     else:
         st.dataframe(contacts, use_container_width=True)
-        _render_delete_contact(contacts)
+        _render_manage_existing_contact(contacts, reports)
 
 
 def _render_contact_form(contacts: pd.DataFrame, reports: list[StudentReportFile]) -> None:
@@ -90,14 +90,14 @@ def _render_contact_form(contacts: pd.DataFrame, reports: list[StudentReportFile
     st.rerun()
 
 
-def _render_delete_contact(contacts: pd.DataFrame) -> None:
-    st.markdown("**Delete Contact**")
+def _render_manage_existing_contact(contacts: pd.DataFrame, reports: list[StudentReportFile]) -> None:
+    st.markdown("**Edit Or Delete Saved Contact**")
     contact_options = [
         _contact_option_label(index, row)
         for index, row in contacts.reset_index(drop=True).iterrows()
     ]
     selected_label = st.selectbox(
-        "Choose a saved contact to delete",
+        "Choose a saved contact",
         options=["Select a contact", *contact_options],
     )
 
@@ -106,6 +106,92 @@ def _render_delete_contact(contacts: pd.DataFrame) -> None:
 
     selected_index = contact_options.index(selected_label)
     selected_row = contacts.reset_index(drop=True).iloc[selected_index]
+    _render_edit_contact_form(contacts, selected_row, reports)
+    _render_delete_contact_button(contacts, selected_row)
+
+
+def _render_edit_contact_form(
+    contacts: pd.DataFrame,
+    selected_row: pd.Series,
+    reports: list[StudentReportFile],
+) -> None:
+    st.markdown("**Modify Selected Contact**")
+    with st.form("edit_parent_contact_form"):
+        col1, col2 = st.columns(2)
+        student_id = col1.text_input(
+            "Student ID",
+            value=str(selected_row["student_id"]),
+            key="edit_student_id",
+        )
+        student_name = col2.text_input(
+            "Student name",
+            value=str(selected_row["student_name"]),
+            key="edit_student_name",
+        )
+        parent1_email = col1.text_input(
+            "Parent 1 email",
+            value=str(selected_row["parent1_email"]),
+            key="edit_parent1_email",
+        )
+        parent1_name = col2.text_input(
+            "Parent 1 name",
+            value=str(selected_row["parent1_name"]),
+            key="edit_parent1_name",
+        )
+        parent2_email = col1.text_input(
+            "Parent 2 email",
+            value=str(selected_row["parent2_email"]),
+            key="edit_parent2_email",
+        )
+        parent2_name = col2.text_input(
+            "Parent 2 name",
+            value=str(selected_row["parent2_name"]),
+            key="edit_parent2_name",
+        )
+
+        submitted = st.form_submit_button("Save Changes")
+
+    if not submitted:
+        return
+
+    report_conflict = _generated_report_id_conflict(reports, student_id, student_name)
+    if report_conflict:
+        st.error(
+            f"Student ID {normalize_student_id(student_id)} belongs to {report_conflict} "
+            "in the generated reports. Use the correct student ID for this student."
+        )
+        return
+
+    updated_contacts, deleted = delete_parent_contact(
+        contacts,
+        student_id=selected_row["student_id"],
+        student_name=selected_row["student_name"],
+    )
+    if not deleted:
+        st.error("Could not find that contact to update.")
+        return
+
+    updated_contacts, action, messages = upsert_parent_contact(
+        updated_contacts,
+        student_id=student_id,
+        student_name=student_name,
+        parent1_email=parent1_email,
+        parent1_name=parent1_name,
+        parent2_email=parent2_email,
+        parent2_name=parent2_name,
+    )
+
+    if action == "error":
+        for message in messages:
+            st.error(message)
+        return
+
+    save_parent_contacts(updated_contacts)
+    st.success("Parent contact updated.")
+    st.rerun()
+
+
+def _render_delete_contact_button(contacts: pd.DataFrame, selected_row: pd.Series) -> None:
     if st.button("Delete Selected Contact"):
         updated_contacts, deleted = delete_parent_contact(
             contacts,
