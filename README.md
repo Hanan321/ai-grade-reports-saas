@@ -2,6 +2,11 @@
 
 A small Streamlit MVP that turns messy student grade sheets into cleaned data and downloadable summary reports.
 
+The project now supports one shared codebase with two commercial modes:
+
+- **Self-serve SaaS** for teachers, tutors, and school office staff.
+- **School/private school** mode for branded school deployments and demos.
+
 The app currently:
 
 - uploads CSV or Excel files
@@ -22,6 +27,10 @@ The app currently:
 ```text
 .
 ├── app.py
+├── config/
+│   ├── default_config.py
+│   ├── saas_config.py
+│   └── school_config.py
 ├── engine/
 │   ├── processing.py
 │   ├── summaries.py
@@ -34,6 +43,9 @@ The app currently:
 ├── data/
 │   └── parent_contacts.csv
 ├── ui/
+│   ├── branding.py
+│   ├── styles.py
+│   ├── sections.py
 │   ├── parent_contacts_section.py
 │   └── email_section.py
 ├── utils/
@@ -52,13 +64,86 @@ The app currently:
 
 ## Grading Logic
 
-The MVP preserves the notebook's current scoring rules:
+The default SaaS mode preserves the notebook's current scoring rules:
 
 ```text
 final_score = homework * 0.30 + quizscore * 0.30 + exam_score * 0.40
 ```
 
 Missing score values are treated as zero for the weighted score. `low_attendance` is true when attendance is below `80`. `at_risk` is true when `final_score` is below `70` or `low_attendance` is true.
+
+School mode can override these values in `config/school_config.py` without changing the shared processing engine.
+
+## Product Modes
+
+Mode is selected by configuration, not by a second app or repository.
+
+Default:
+
+```bash
+streamlit run app.py
+```
+
+Run SaaS mode explicitly:
+
+```bash
+APP_MODE=saas streamlit run app.py
+```
+
+Run school mode:
+
+```bash
+APP_MODE=school streamlit run app.py
+```
+
+On Streamlit Community Cloud, set `APP_MODE` in app secrets or environment settings if available. If `APP_MODE` is not set or is invalid, the app falls back to SaaS mode.
+
+### SaaS Mode
+
+Defined in:
+
+```text
+config/saas_config.py
+```
+
+SaaS mode uses:
+
+- generic product title
+- generic report title/footer
+- standard scoring weights
+- standard risk/high-performance thresholds
+- no school logo/branding header
+
+### School Mode
+
+Defined in:
+
+```text
+config/school_config.py
+```
+
+School mode enables:
+
+- school name in the app header
+- school-specific colors
+- configurable report title/header/footer
+- configurable grading weights
+- configurable low-attendance, at-risk, and high-performance thresholds
+- workbook metadata and student report text branding
+
+To customize a private-school demo, edit `SCHOOL_CONFIG` in `config/school_config.py`.
+
+Current school-mode demo values:
+
+```text
+school_name = Demo Private School
+weights = homework 0.25, quizscore 0.25, exam_score 0.50
+low_attendance_threshold = 85
+at_risk_score_threshold = 72
+high_performer_score_threshold = 90
+```
+
+Logo display is supported in the app header when `logo_path` points to a local image file. Full logo embedding inside every export is a next-step enhancement; the current MVP applies report title/header/footer text and workbook metadata.
 
 ## Supported Columns
 
@@ -250,6 +335,19 @@ Recommended safe flow:
 
 ```bash
 pytest
+```
+
+Smoke-test both product modes locally:
+
+```bash
+APP_MODE=saas streamlit run app.py
+APP_MODE=school streamlit run app.py
+```
+
+Use `Ctrl+C` to stop the first server before starting the second, or run the second on another port:
+
+```bash
+APP_MODE=school streamlit run app.py --server.port 8502
 ```
 
 ## Deployment

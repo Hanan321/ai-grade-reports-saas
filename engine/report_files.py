@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from config.default_config import ReportBrandingConfig
 from engine.student_reports import (
     _first_present,
     _student_groups,
@@ -24,12 +25,15 @@ class StudentReportFile:
     content: bytes
 
 
-def build_student_report_files(cleaned: pd.DataFrame) -> list[StudentReportFile]:
+def build_student_report_files(
+    cleaned: pd.DataFrame,
+    report_branding: ReportBrandingConfig | None = None,
+) -> list[StudentReportFile]:
     """Build one report file object per student."""
 
     reports: list[StudentReportFile] = []
     for index, (student_key, student_df) in enumerate(_student_groups(cleaned), start=1):
-        report_html = build_student_report_html(student_df)
+        report_html = build_student_report_html(student_df, report_branding=report_branding)
         filename = _student_report_filename(student_df, student_key, index)
         student_name = _first_present(student_df, "student_name", "Unknown Student")
         student_id = _first_present(student_df, "student_id", "")

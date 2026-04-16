@@ -6,6 +6,7 @@ from io import BytesIO
 
 import pandas as pd
 
+from config.default_config import ReportBrandingConfig
 from engine.filters import (
     get_at_risk_students,
     get_high_performing_students,
@@ -41,6 +42,7 @@ def export_excel_workbook(
     subject_summary: pd.DataFrame,
     warnings: list[str] | None = None,
     config: GradeReportConfig = DEFAULT_CONFIG,
+    report_branding: ReportBrandingConfig | None = None,
 ) -> bytes:
     """Create a polished multi-sheet Excel workbook in memory."""
 
@@ -66,6 +68,7 @@ def export_excel_workbook(
         format_report_workbook(
             writer.book,
             high_performer_threshold=config.high_performer_score_threshold,
+            report_branding=report_branding,
         )
     return output.getvalue()
 

@@ -10,6 +10,8 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 import pandas as pd
 
+from config.default_config import ReportBrandingConfig
+
 
 REPORT_COLUMNS: tuple[str, ...] = (
     "student_id",
@@ -38,23 +40,29 @@ class StudentReportFile:
     content: bytes
 
 
-def export_student_reports_zip(cleaned: pd.DataFrame) -> bytes:
+def export_student_reports_zip(
+    cleaned: pd.DataFrame,
+    report_branding: ReportBrandingConfig | None = None,
+) -> bytes:
     """Create a ZIP file containing one HTML report per student."""
 
     output = BytesIO()
     with ZipFile(output, mode="w", compression=ZIP_DEFLATED) as archive:
-        for report in build_student_report_files(cleaned):
+        for report in build_student_report_files(cleaned, report_branding=report_branding):
             archive.writestr(report.filename, report.content)
 
     return output.getvalue()
 
 
-def build_student_report_files(cleaned: pd.DataFrame) -> list[StudentReportFile]:
+def build_student_report_files(
+    cleaned: pd.DataFrame,
+    report_branding: ReportBrandingConfig | None = None,
+) -> list[StudentReportFile]:
     """Build one report file object per student."""
 
     reports: list[StudentReportFile] = []
     for index, (student_key, student_df) in enumerate(_student_groups(cleaned), start=1):
-        report_html = build_student_report_html(student_df)
+        report_html = build_student_report_html(student_df, report_branding=report_branding)
         filename = _student_report_filename(student_df, student_key, index)
         student_name = _first_present(student_df, "student_name", "Unknown Student")
         student_id = _first_present(student_df, "student_id", "")
@@ -69,9 +77,13 @@ def build_student_report_files(cleaned: pd.DataFrame) -> list[StudentReportFile]
     return reports
 
 
-def build_student_report_html(student_df: pd.DataFrame) -> str:
+def build_student_report_html(
+    student_df: pd.DataFrame,
+    report_branding: ReportBrandingConfig | None = None,
+) -> str:
     """Build one readable parent-facing HTML report."""
 
+    report_branding = report_branding or ReportBrandingConfig()
     student_name = _first_present(student_df, "student_name", "Unknown Student")
     student_id = _first_present(student_df, "student_id", "")
     grade = _first_present(student_df, "grade", "")
@@ -91,7 +103,7 @@ def build_student_report_html(student_df: pd.DataFrame) -> str:
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>{escape(str(student_name))} - Student Report</title>
+  <title>{escape(str(student_name))} - {escape(report_branding.report_title)}</title>
   <style>
     body {{
       background: #f6f8fb;
@@ -112,6 +124,13 @@ def build_student_report_html(student_df: pd.DataFrame) -> str:
     .subtitle {{
       color: #526070;
       font-size: 14px;
+    }}
+    footer {{
+      border-top: 1px solid #d9e2ef;
+      color: #526070;
+      font-size: 12px;
+      margin-top: 24px;
+      padding-top: 12px;
     }}
     .summary {{
       display: grid;
@@ -164,8 +183,9 @@ def build_student_report_html(student_df: pd.DataFrame) -> str:
 </head>
 <body>
   <header>
-    <h1>{escape(str(student_name))}</h1>
-    <div class="subtitle">Student progress report for parent or teacher review</div>
+    <h1>{escape(str(report_branding.report_title))}</h1>
+    <div class="subtitle">{escape(str(report_branding.header_text))}</div>
+    <h2>{escape(str(student_name))}</h2>
   </header>
   <section class="summary">
     <div class="metric"><div class="label">Student ID</div><div class="value">{escape(str(student_id or "N/A"))}</div></div>
@@ -177,6 +197,7 @@ def build_student_report_html(student_df: pd.DataFrame) -> str:
   </section>
   <h2>Assessment Details</h2>
   {detail_table}
+  <footer>{escape(str(report_branding.footer_text))}</footer>
 </body>
 </html>
 """

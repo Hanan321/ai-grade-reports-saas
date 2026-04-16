@@ -2,20 +2,22 @@
 
 from __future__ import annotations
 
-from html import escape
-
 import streamlit as st
 
+from config.default_config import AppConfig, load_app_config
 from engine.exports import export_excel_workbook, export_outputs
 from engine.filters import get_at_risk_students, get_high_performing_students, get_low_attendance_students
 from engine.mapping import apply_column_mapping, infer_column_mapping
 from engine.processing import load_data, process_mapped_grade_report
 from engine.report_files import build_student_report_files
-from engine.schemas import CANONICAL_FIELDS, DEFAULT_CONFIG
+from engine.schemas import CANONICAL_FIELDS
 from engine.student_reports import export_student_reports_zip
 from engine.summaries import build_student_summary, build_subject_summary
+from ui.branding import render_app_header, render_config_sidebar
 from ui.email_section import render_email_section
 from ui.parent_contacts_section import render_parent_contacts_section
+from ui.sections import render_validation_summary
+from ui.styles import render_page_styles
 from utils.helpers import display_dataframe, style_grade_dataframe, style_high_performer_dataframe
 from utils.validators import build_quality_warnings, validate_column_mapping
 
@@ -23,195 +25,9 @@ from utils.validators import build_quality_warnings, validate_column_mapping
 UNMAPPED_LABEL = "Not mapped"
 
 
-st.set_page_config(page_title="Student Grade Report Cleaner", layout="wide")
+APP_CONFIG = load_app_config()
 
-
-def render_page_styles() -> None:
-    """Add light product styling without overwhelming Streamlit defaults."""
-
-    st.markdown(
-        """
-        <style>
-        :root {
-            --app-bg: #f6f8fb;
-            --surface: #ffffff;
-            --surface-soft: #f9fbff;
-            --border: #d9e2ef;
-            --border-strong: #c7d3e3;
-            --text: #111827;
-            --muted: #5b677a;
-            --accent: #2563eb;
-            --accent-soft: #eaf2ff;
-            --danger-soft: #fff1f2;
-            --danger: #b42318;
-            --warning-soft: #fff8e6;
-            --warning: #9a6700;
-        }
-        .stApp,
-        [data-testid="stAppViewContainer"] {
-            background:
-                linear-gradient(
-                    rgba(246, 248, 251, 0.48),
-                    rgba(246, 248, 251, 0.48)
-                ),
-                url("https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1800&q=80");
-            background-attachment: fixed;
-            background-color: var(--app-bg);
-            background-position: center;
-            background-size: cover;
-            color: var(--text);
-        }
-        section[data-testid="stMain"],
-        div[data-testid="stMainBlockContainer"] {
-            background: transparent;
-        }
-        [data-testid="stHeader"] {
-            background: rgba(246, 248, 251, 0.68);
-            backdrop-filter: blur(4px);
-        }
-        [data-testid="stSidebar"] {
-            background: rgba(255, 255, 255, 0.86);
-        }
-        .block-container {
-            background: rgba(255, 255, 255, 0.76);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            box-shadow: 0 14px 40px rgba(17, 24, 39, 0.06);
-            backdrop-filter: blur(2px);
-            margin-top: 1.5rem;
-            margin-bottom: 1.5rem;
-            padding-top: 2rem;
-        }
-        h1, h2, h3, h4, h5, h6, p, label, span {
-            color: var(--text);
-        }
-        div[data-testid="stFileUploader"] section {
-            background: var(--surface-soft);
-            border-color: var(--border-strong);
-            border-radius: 8px;
-        }
-        div[data-testid="stDataFrame"] {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            box-shadow: 0 6px 18px rgba(17, 24, 39, 0.04);
-            overflow: hidden;
-        }
-        div[data-testid="stMetric"] {
-            background: var(--surface-soft);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
-        }
-        div[data-testid="stMetricLabel"] {
-            color: var(--muted);
-        }
-        div[data-baseweb="select"] > div {
-            background: var(--surface);
-            border-color: var(--border-strong);
-            color: var(--text);
-            border-radius: 8px;
-        }
-        div[data-baseweb="select"] span,
-        div[data-baseweb="select"] input {
-            color: var(--text);
-        }
-        div[data-baseweb="popover"],
-        ul[data-testid="stVirtualDropdown"] {
-            background: var(--surface);
-            color: var(--text);
-        }
-        div[data-testid="stButton"] > button,
-        div[data-testid="stDownloadButton"] > button {
-            background: var(--surface);
-            border: 1px solid #bdd4f8;
-            border-radius: 8px;
-            color: var(--accent);
-            font-weight: 650;
-            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.08);
-        }
-        div[data-testid="stButton"] > button:hover,
-        div[data-testid="stDownloadButton"] > button:hover {
-            background: var(--accent-soft);
-            border-color: #8db7f4;
-            color: #1d4ed8;
-        }
-        div[data-testid="stButton"] > button[kind="primary"] {
-            background: var(--accent-soft);
-            border-color: #8db7f4;
-            color: #1d4ed8;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.12);
-        }
-        div[data-baseweb="tab-list"] {
-            background: var(--surface-soft);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 0.25rem;
-        }
-        button[data-baseweb="tab"] {
-            border-radius: 8px;
-            color: var(--muted);
-        }
-        button[data-baseweb="tab"][aria-selected="true"] {
-            background: var(--accent-soft);
-            color: var(--accent);
-        }
-        div[data-testid="stAlert"] {
-            background: var(--surface-soft);
-            color: var(--text);
-            border-radius: 8px;
-        }
-        .validation-box {
-            border: 1px solid var(--border);
-            border-left-width: 5px;
-            border-radius: 8px;
-            padding: 0.85rem 1rem;
-            margin: 0.75rem 0;
-            background: var(--surface-soft);
-            color: var(--text);
-        }
-        .validation-box strong {
-            display: block;
-            margin-bottom: 0.35rem;
-        }
-        .validation-error {
-            border-left-color: var(--danger);
-            background: var(--danger-soft);
-        }
-        .validation-warning {
-            border-left-color: var(--warning);
-            background: var(--warning-soft);
-        }
-        .muted-note {
-            color: var(--muted);
-            font-size: 0.95rem;
-        }
-        div[data-testid="stMetricValue"] {
-            font-size: 1.6rem;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def render_validation_summary(title: str, messages: list[str], level: str) -> None:
-    """Render compact validation feedback grouped by severity."""
-
-    if not messages:
-        return
-
-    class_name = "validation-error" if level == "error" else "validation-warning"
-    message_items = "".join(f"<li>{escape(message)}</li>" for message in messages)
-    st.markdown(
-        f"""
-        <div class="validation-box {class_name}">
-            <strong>{escape(title)}</strong>
-            <ul>{message_items}</ul>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+st.set_page_config(page_title=APP_CONFIG.branding.page_title, layout="wide")
 
 
 def upload_signature(uploaded_file) -> tuple[str, int]:
@@ -285,17 +101,24 @@ def render_mapping_review(raw_df) -> dict[str, str | None]:
     return collect_mapping_from_widgets()
 
 
-def build_outputs(raw_df, mapping: dict[str, str | None]) -> dict[str, object]:
+def build_outputs(
+    raw_df,
+    mapping: dict[str, str | None],
+    app_config: AppConfig,
+) -> dict[str, object]:
     """Apply mapping, process the data, and build all report outputs."""
 
     mapped_df = apply_column_mapping(raw_df, mapping)
-    cleaned_df = process_mapped_grade_report(mapped_df)
+    cleaned_df = process_mapped_grade_report(mapped_df, config=app_config.grade_report)
     student_summary = build_student_summary(cleaned_df)
     subject_summary = build_subject_summary(cleaned_df)
     at_risk = get_at_risk_students(cleaned_df)
-    high_performers = get_high_performing_students(cleaned_df)
+    high_performers = get_high_performing_students(cleaned_df, config=app_config.grade_report)
     low_attendance = get_low_attendance_students(cleaned_df)
-    student_report_files = build_student_report_files(cleaned_df)
+    student_report_files = build_student_report_files(
+        cleaned_df,
+        report_branding=app_config.report_branding,
+    )
 
     return {
         "cleaned_df": cleaned_df,
@@ -309,13 +132,9 @@ def build_outputs(raw_df, mapping: dict[str, str | None]) -> dict[str, object]:
     }
 
 
-render_page_styles()
-
-st.title("Student Grade Report Cleaner")
-st.write(
-    "Upload a CSV or Excel grade sheet, review the detected column mapping, "
-    "then generate cleaned data, risk views, summaries, and downloads."
-)
+render_page_styles(APP_CONFIG)
+render_config_sidebar(APP_CONFIG)
+render_app_header(APP_CONFIG)
 
 uploaded_file = st.file_uploader("Upload a grade sheet", type=["csv", "xlsx", "xls"])
 
@@ -354,7 +173,7 @@ generate_clicked = st.button(
 
 if generate_clicked:
     try:
-        outputs = build_outputs(raw_df, selected_mapping)
+        outputs = build_outputs(raw_df, selected_mapping, APP_CONFIG)
     except Exception as exc:
         render_validation_summary("The report could not be generated", [str(exc)], "error")
         st.stop()
@@ -422,7 +241,7 @@ with tabs[1]:
         st.dataframe(style_grade_dataframe(at_risk), use_container_width=True)
 
 with tabs[2]:
-    threshold = DEFAULT_CONFIG.high_performer_score_threshold
+    threshold = APP_CONFIG.grade_report.high_performer_score_threshold
     if high_performers.empty:
         st.info(f"No students met the high performer threshold of {threshold:g}.")
     else:
@@ -446,6 +265,8 @@ with tabs[5]:
                 student_summary,
                 subject_summary,
                 warnings=warnings,
+                config=APP_CONFIG.grade_report,
+                report_branding=APP_CONFIG.report_branding,
             ),
             file_name="grade_report_workbook.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -454,7 +275,10 @@ with tabs[5]:
     with primary_downloads[1]:
         st.download_button(
             label="Student Reports ZIP",
-            data=export_student_reports_zip(cleaned_df),
+            data=export_student_reports_zip(
+                cleaned_df,
+                report_branding=APP_CONFIG.report_branding,
+            ),
             file_name="student_reports_html.zip",
             mime="application/zip",
             use_container_width=True,

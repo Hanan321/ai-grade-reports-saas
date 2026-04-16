@@ -7,6 +7,8 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
+from config.default_config import ReportBrandingConfig
+
 
 HEADER_FILL = PatternFill("solid", fgColor="F8FAFC")
 HEADER_FONT = Font(color="111827", bold=True)
@@ -15,8 +17,17 @@ HIGH_PERFORMER_FILL = PatternFill("solid", fgColor="DCFCE7")
 LOW_ATTENDANCE_FILL = PatternFill("solid", fgColor="FEF3C7")
 
 
-def format_report_workbook(workbook, high_performer_threshold: float = 85.0) -> None:
+def format_report_workbook(
+    workbook,
+    high_performer_threshold: float = 85.0,
+    report_branding: ReportBrandingConfig | None = None,
+) -> None:
     """Apply shared formatting to every worksheet in the report workbook."""
+
+    if report_branding:
+        workbook.properties.title = report_branding.report_title
+        workbook.properties.subject = report_branding.header_text
+        workbook.properties.description = report_branding.footer_text
 
     for worksheet in workbook.worksheets:
         format_report_sheet(worksheet, high_performer_threshold=high_performer_threshold)

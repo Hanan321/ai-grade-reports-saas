@@ -3,6 +3,7 @@ from io import BytesIO
 import pandas as pd
 from openpyxl import load_workbook
 
+from config.default_config import ReportBrandingConfig
 from engine.exports import export_excel_workbook
 
 
@@ -62,3 +63,26 @@ def test_export_excel_workbook_includes_product_sheets_and_formatting():
     assert workbook["At-Risk Students"].max_row == 3
     assert workbook["High-Performing Students"].max_row == 2
     assert workbook["Low Attendance Students"].max_row == 3
+
+
+def test_export_excel_workbook_applies_report_branding_metadata():
+    cleaned = pd.DataFrame({"student_name": ["Ali"], "final_score": [90], "at_risk": [False]})
+    student_summary = pd.DataFrame({"student_name": ["Ali"], "avg_final_score": [90]})
+    subject_summary = pd.DataFrame({"subject": ["Math"], "avg_final_score": [90]})
+    branding = ReportBrandingConfig(
+        report_title="Demo School Workbook",
+        header_text="Official report",
+        footer_text="Confidential",
+    )
+
+    workbook_bytes = export_excel_workbook(
+        cleaned,
+        student_summary,
+        subject_summary,
+        report_branding=branding,
+    )
+    workbook = load_workbook(BytesIO(workbook_bytes))
+
+    assert workbook.properties.title == "Demo School Workbook"
+    assert workbook.properties.subject == "Official report"
+    assert workbook.properties.description == "Confidential"

@@ -3,6 +3,7 @@ from zipfile import ZipFile
 
 import pandas as pd
 
+from config.default_config import ReportBrandingConfig
 from engine.student_reports import build_student_report_html, export_student_reports_zip
 
 
@@ -29,6 +30,30 @@ def test_build_student_report_html_contains_parent_facing_fields():
     assert "Ali Ahmed" in html
     assert "Assessment Details" in html
     assert "good progress" in html
+
+
+def test_build_student_report_html_applies_report_branding():
+    df = pd.DataFrame(
+        {
+            "student_id": [201],
+            "student_name": ["Ali Ahmed"],
+            "final_score": [85.7],
+            "attendance_percent": [88],
+            "at_risk": [False],
+            "low_attendance": [False],
+        }
+    )
+    branding = ReportBrandingConfig(
+        report_title="Demo School Report",
+        header_text="Official progress update",
+        footer_text="Demo School footer",
+    )
+
+    html = build_student_report_html(df, report_branding=branding)
+
+    assert "Demo School Report" in html
+    assert "Official progress update" in html
+    assert "Demo School footer" in html
 
 
 def test_export_student_reports_zip_creates_one_html_file_per_student():
