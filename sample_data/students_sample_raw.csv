@@ -1,11 +1,10 @@
 student id,Student  Name,grade,subject,Test Date,homework score,QuizScore,Exam score,attendance %,notes
-201,ali  ahmed,7,math,2025-1-03,85,78,92,88,good progress
-202,Aisha   Ali,7,MATH,01/05/25,,81,89,95,missing homework last week
-203,MOHAMED omar,8,Science,2025/01/07,90,,88,92,
-204,Sara  Hassan,7,MATH,2025-1-9,72,69,,75,needs help with fractions
-205,abdel rahman,8,Science,09-01-2025,88,84,91,,great participation
-206,Lina Mahmoud,7,Math,2025-01-10,95,94,99,100,top of the class
-201,Ali Ahmed,7,Math,2025-01-03,85,78,92,88,duplicate row?
-209,Khalid Sami,9,PHYSICS,2025-01-11,,,76,60,low attendance
-210,Farah   Omar,8,science,2025-01-12,88,85,90,98,
-
+201,ali  ahmed,7,math,1/3/2025,85,78,92,88,good progress
+202,Aisha   Ali,7,MATH,1/5/2025,,81,89,95,missing homework last week
+203,MOHAMED omar,8,Science,1/7/2025,90,,88,92,
+204,Sara  Hassan,7,MATH,1/9/2025,72,69,,75,needs help with fractions
+205,abdel rahman,8,Science,9/1/2025,88,84,91,,great participation
+206,Lina Mahmoud,7,Math,1/10/2025,95,94,99,100,top of the class
+201,Ali Ahmed,7,Math,1/3/2025,85,78,92,88,duplicate row?
+209,Khalid Sami,9,PHYSICS,1/11/2025,,,76,60,low attendance
+210,Farah   Omar,8,science,1/12/2025,88,85,90,98,

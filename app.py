@@ -48,8 +48,8 @@ def render_page_styles() -> None:
         [data-testid="stAppViewContainer"] {
             background:
                 linear-gradient(
-                    rgba(246, 248, 251, 0.82),
-                    rgba(246, 248, 251, 0.82)
+                    rgba(246, 248, 251, 0.48),
+                    rgba(246, 248, 251, 0.48)
                 ),
                 url("https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1800&q=80");
             background-attachment: fixed;
@@ -63,18 +63,18 @@ def render_page_styles() -> None:
             background: transparent;
         }
         [data-testid="stHeader"] {
-            background: rgba(246, 248, 251, 0.82);
-            backdrop-filter: blur(6px);
+            background: rgba(246, 248, 251, 0.68);
+            backdrop-filter: blur(4px);
         }
         [data-testid="stSidebar"] {
-            background: rgba(255, 255, 255, 0.92);
+            background: rgba(255, 255, 255, 0.86);
         }
         .block-container {
-            background: rgba(255, 255, 255, 0.82);
+            background: rgba(255, 255, 255, 0.76);
             border: 1px solid var(--border);
             border-radius: 8px;
             box-shadow: 0 14px 40px rgba(17, 24, 39, 0.06);
-            backdrop-filter: blur(3px);
+            backdrop-filter: blur(2px);
             margin-top: 1.5rem;
             margin-bottom: 1.5rem;
             padding-top: 2rem;
