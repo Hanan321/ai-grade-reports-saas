@@ -10,8 +10,9 @@ from engine.exports import export_excel_workbook, export_outputs
 from engine.filters import get_at_risk_students, get_high_performing_students, get_low_attendance_students
 from engine.mapping import apply_column_mapping, infer_column_mapping
 from engine.processing import load_data, process_mapped_grade_report
+from engine.report_files import build_student_report_files
 from engine.schemas import CANONICAL_FIELDS, DEFAULT_CONFIG
-from engine.student_reports import build_student_report_files, export_student_reports_zip
+from engine.student_reports import export_student_reports_zip
 from engine.summaries import build_student_summary, build_subject_summary
 from ui.email_section import render_email_section
 from utils.helpers import display_dataframe, style_grade_dataframe, style_high_performer_dataframe

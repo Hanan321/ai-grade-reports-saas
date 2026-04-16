@@ -19,7 +19,7 @@ from engine.parent_matching import (
     match_reports_to_parent_contacts,
     matches_to_dataframe,
 )
-from engine.student_reports import StudentReportFile
+from engine.report_files import StudentReportFile
 from utils.email_validators import is_valid_email
 
 

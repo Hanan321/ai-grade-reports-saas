@@ -2,7 +2,7 @@ import pandas as pd
 
 from engine.email_delivery import build_parent_report_message
 from engine.parent_matching import match_reports_to_parent_contacts
-from engine.student_reports import StudentReportFile
+from engine.report_files import StudentReportFile
 
 
 def test_build_parent_report_message_attaches_report_and_marks_test_mode():

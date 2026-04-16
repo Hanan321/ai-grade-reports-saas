@@ -9,7 +9,7 @@ from typing import BinaryIO
 
 import pandas as pd
 
-from engine.student_reports import StudentReportFile
+from engine.report_files import StudentReportFile
 from utils.email_validators import is_valid_email
 
 
