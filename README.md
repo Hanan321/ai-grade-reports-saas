@@ -26,14 +26,18 @@ The app currently:
 │   ├── processing.py
 │   ├── summaries.py
 │   ├── exports.py
+│   ├── parent_contacts.py
 │   ├── parent_matching.py
+│   ├── report_files.py
 │   ├── email_delivery.py
 │   └── schemas.py
 ├── data/
 │   └── parent_contacts.csv
 ├── ui/
+│   ├── parent_contacts_section.py
 │   └── email_section.py
 ├── utils/
+│   ├── contact_validators.py
 │   ├── email_validators.py
 │   ├── validators.py
 │   └── helpers.py
@@ -144,6 +148,23 @@ Optional columns:
 - `parent_name` is included for clarity in the preview.
 
 You can also upload a parent-contact CSV for the current Streamlit session from the **Parent Emails** tab. That is useful for testing a revised contact list before replacing `data/parent_contacts.csv`.
+
+## Managing Parent Contacts In The App
+
+After generating reports, open the **Parent Contacts** tab to add or update saved parent contacts without editing the CSV by hand.
+
+The form saves:
+
+- `student_id`
+- `student_name`
+- `parent_email`
+- `parent_name`
+
+`student_name` and `parent_email` are required. `student_id` is optional, but recommended because it gives the safest match. If you save a contact with the same `student_id` or normalized `student_name` as an existing saved contact, the app updates the existing row instead of creating an obvious duplicate.
+
+The same tab also shows the saved contact table and lets you delete a saved contact.
+
+The **Parent Emails** tab always includes saved contacts from `data/parent_contacts.csv`. You can also add an uploaded parent contacts CSV for the current session. When the same student appears in both places, the saved/manual contact from `data/parent_contacts.csv` takes priority over the uploaded CSV row.
 
 ## Matching Rules
 

@@ -15,6 +15,7 @@ from engine.schemas import CANONICAL_FIELDS, DEFAULT_CONFIG
 from engine.student_reports import export_student_reports_zip
 from engine.summaries import build_student_summary, build_subject_summary
 from ui.email_section import render_email_section
+from ui.parent_contacts_section import render_parent_contacts_section
 from utils.helpers import display_dataframe, style_grade_dataframe, style_high_performer_dataframe
 from utils.validators import build_quality_warnings, validate_column_mapping
 
@@ -406,6 +407,7 @@ tabs = st.tabs(
         "Summary by Student",
         "Summary by Subject",
         "Downloads",
+        "Parent Contacts",
         "Parent Emails",
     ]
 )
@@ -473,4 +475,7 @@ with tabs[5]:
             )
 
 with tabs[6]:
+    render_parent_contacts_section()
+
+with tabs[7]:
     render_email_section(student_report_files)

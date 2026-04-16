@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -14,6 +13,7 @@ from engine.email_delivery import (
     SmtpConfig,
     send_parent_report_batch,
 )
+from engine.parent_contacts import load_saved_parent_contacts, merge_parent_contacts
 from engine.parent_matching import (
     load_parent_contacts,
     match_reports_to_parent_contacts,
@@ -23,7 +23,6 @@ from engine.report_files import StudentReportFile
 from utils.email_validators import is_valid_email
 
 
-DEFAULT_PARENT_CONTACTS_PATH = Path("data/parent_contacts.csv")
 TEST_BATCH_LIMIT = 3
 
 
@@ -116,15 +115,15 @@ def render_email_section(reports: list[StudentReportFile]) -> None:
 
 def _load_contacts_ui() -> pd.DataFrame | None:
     st.markdown("**Parent Contact Source**")
-    default_exists = DEFAULT_PARENT_CONTACTS_PATH.exists()
-    source_choice = st.radio(
-        "Choose parent contact source",
-        options=["App-managed CSV", "Upload CSV for this session"],
-        horizontal=True,
-        label_visibility="collapsed",
+    st.caption(
+        "Saved manual contacts are always included. You can optionally upload a CSV for "
+        "this session; saved manual contacts take priority when the same student appears in both."
     )
 
-    if source_choice == "Upload CSV for this session":
+    saved_contacts = load_saved_parent_contacts()
+    uploaded_contacts = None
+    include_upload = st.checkbox("Add an uploaded parent contacts CSV for this session")
+    if include_upload:
         uploaded_contacts = st.file_uploader(
             "Upload parent contacts CSV",
             type=["csv"],
@@ -132,14 +131,23 @@ def _load_contacts_ui() -> pd.DataFrame | None:
         )
         if uploaded_contacts is None:
             st.info("Upload a CSV with student_name, optional student_id, parent_email, and optional parent_name.")
-            return None
-        return load_parent_contacts(uploaded_contacts)
+        else:
+            try:
+                uploaded_contacts = load_parent_contacts(uploaded_contacts)
+            except ValueError as exc:
+                st.error(str(exc))
+                return None
 
-    st.caption(f"Using `{DEFAULT_PARENT_CONTACTS_PATH}`.")
-    if not default_exists:
-        st.warning("The app-managed parent contact CSV was not found.")
+    combined_contacts = merge_parent_contacts(uploaded_contacts, saved_contacts)
+    if combined_contacts.empty:
+        st.warning("No parent contacts are available. Add saved contacts or upload a parent contacts CSV.")
         return None
-    return load_parent_contacts(DEFAULT_PARENT_CONTACTS_PATH)
+
+    metric_cols = st.columns(3)
+    metric_cols[0].metric("Saved Contacts", len(saved_contacts))
+    metric_cols[1].metric("Uploaded Contacts", 0 if uploaded_contacts is None else len(uploaded_contacts))
+    metric_cols[2].metric("Combined Contacts", len(combined_contacts))
+    return combined_contacts
 
 
 def _render_email_config_ui() -> tuple[SmtpConfig | None, str, list[str]]:
