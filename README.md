@@ -118,6 +118,23 @@ SaaS mode uses:
 - standard scoring weights
 - standard risk/high-performance thresholds
 - no school logo/branding header
+- no admin dashboard
+- no parent contacts manager
+- no parent email sending UI
+- no persistent school email settings UI
+
+The SaaS workflow is intentionally lightweight: upload a grade sheet, review mapping, generate reports, review summaries, and download the Excel workbook or student report ZIP.
+
+The sidebar scoring values are editable in both SaaS and school mode before report generation:
+
+- homework weight
+- quiz score weight
+- exam score weight
+- at-risk threshold
+- low attendance threshold
+- high performer threshold
+
+If you change these values after generating reports, click **Generate Reports** again so the outputs use the new settings.
 
 ### School Mode
 
@@ -138,6 +155,8 @@ School mode enables:
 - configurable grading weights
 - configurable low-attendance, at-risk, and high-performance thresholds
 - workbook metadata and student report text branding
+
+The same editable sidebar scoring controls are available in school mode. For permanent school defaults, edit `config/school_config.py`; sidebar edits apply to the current Streamlit session.
 
 To customize a private-school demo, edit `SCHOOL_CONFIG` in `config/school_config.py`.
 
@@ -216,7 +235,9 @@ Try the included sample file:
 sample_data/students_sample_raw.csv
 ```
 
-## Parent Report Email Workflow
+## School Mode Parent Report Email Workflow
+
+Parent contacts, parent email matching, and batch email sending are school-mode features. They are hidden in SaaS mode.
 
 After uploading a grade file and reviewing the column mapping, click **Generate Reports**. The app creates all student HTML reports at once. Open the **Parent Emails** tab to preview the ready-to-send parent email table before any email is sent.
 

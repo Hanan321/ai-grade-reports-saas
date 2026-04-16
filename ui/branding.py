@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from html import escape
 from pathlib import Path
 
 import streamlit as st
 
 from config.default_config import AppConfig
+from engine.schemas import GradeReportConfig
 
 
 def render_app_header(app_config: AppConfig) -> None:
@@ -36,8 +38,8 @@ def render_app_header(app_config: AppConfig) -> None:
     )
 
 
-def render_config_sidebar(app_config: AppConfig) -> None:
-    """Show the active product mode and key configurable values."""
+def render_config_sidebar(app_config: AppConfig) -> AppConfig:
+    """Show editable product mode scoring values and return the active config."""
 
     with st.sidebar:
         st.subheader("Product Mode")
@@ -47,8 +49,84 @@ def render_config_sidebar(app_config: AppConfig) -> None:
         st.caption("Switch modes with the APP_MODE environment variable.")
 
         st.subheader("Scoring Config")
-        for field, weight in app_config.grade_report.weights.items():
-            st.write(f"{field}: {weight:.2f}")
-        st.write(f"At-risk threshold: {app_config.grade_report.at_risk_score_threshold:g}")
-        st.write(f"Low attendance: {app_config.grade_report.low_attendance_threshold:g}")
-        st.write(f"High performer: {app_config.grade_report.high_performer_score_threshold:g}")
+        st.caption("These values apply to this Streamlit session before report generation.")
+        edited_grade_report = render_scoring_controls(app_config.grade_report, mode=app_config.mode)
+        return replace(app_config, grade_report=edited_grade_report)
+
+
+def render_scoring_controls(config: GradeReportConfig, mode: str) -> GradeReportConfig:
+    """Render sidebar controls for score weights and thresholds."""
+
+    weights = config.weights
+    homework_weight = st.number_input(
+        "Homework weight",
+        min_value=0.0,
+        max_value=1.0,
+        value=float(weights.get("homework", 0.0)),
+        step=0.05,
+        format="%.2f",
+        key=f"{mode}_homework_weight",
+    )
+    quiz_weight = st.number_input(
+        "Quiz score weight",
+        min_value=0.0,
+        max_value=1.0,
+        value=float(weights.get("quizscore", 0.0)),
+        step=0.05,
+        format="%.2f",
+        key=f"{mode}_quizscore_weight",
+    )
+    exam_weight = st.number_input(
+        "Exam score weight",
+        min_value=0.0,
+        max_value=1.0,
+        value=float(weights.get("exam_score", 0.0)),
+        step=0.05,
+        format="%.2f",
+        key=f"{mode}_exam_score_weight",
+    )
+
+    weight_total = homework_weight + quiz_weight + exam_weight
+    st.caption(f"Weight total: {weight_total:.2f}")
+    if abs(weight_total - 1.0) > 0.001:
+        st.warning("Weights usually should total 1.00.")
+
+    at_risk_threshold = st.number_input(
+        "At-risk threshold",
+        min_value=0.0,
+        max_value=100.0,
+        value=float(config.at_risk_score_threshold),
+        step=1.0,
+        format="%.1f",
+        key=f"{mode}_at_risk_threshold",
+    )
+    low_attendance_threshold = st.number_input(
+        "Low attendance",
+        min_value=0.0,
+        max_value=100.0,
+        value=float(config.low_attendance_threshold),
+        step=1.0,
+        format="%.1f",
+        key=f"{mode}_low_attendance_threshold",
+    )
+    high_performer_threshold = st.number_input(
+        "High performer",
+        min_value=0.0,
+        max_value=100.0,
+        value=float(config.high_performer_score_threshold),
+        step=1.0,
+        format="%.1f",
+        key=f"{mode}_high_performer_threshold",
+    )
+
+    return replace(
+        config,
+        score_weights={
+            "homework": homework_weight,
+            "quizscore": quiz_weight,
+            "exam_score": exam_weight,
+        },
+        at_risk_score_threshold=at_risk_threshold,
+        low_attendance_threshold=low_attendance_threshold,
+        high_performer_score_threshold=high_performer_threshold,
+    )

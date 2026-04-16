@@ -40,6 +40,20 @@ def upload_signature(uploaded_file) -> tuple[str, int]:
     return uploaded_file.name, size
 
 
+def scoring_config_signature(app_config: AppConfig) -> tuple[object, ...]:
+    """Return the values that affect generated report calculations."""
+
+    weights = app_config.grade_report.weights
+    return (
+        round(float(weights.get("homework", 0.0)), 6),
+        round(float(weights.get("quizscore", 0.0)), 6),
+        round(float(weights.get("exam_score", 0.0)), 6),
+        round(float(app_config.grade_report.at_risk_score_threshold), 6),
+        round(float(app_config.grade_report.low_attendance_threshold), 6),
+        round(float(app_config.grade_report.high_performer_score_threshold), 6),
+    )
+
+
 def reset_mapping_state(raw_df) -> None:
     """Initialize session state for a newly uploaded file."""
 
@@ -48,6 +62,7 @@ def reset_mapping_state(raw_df) -> None:
     st.session_state.column_mapping = inferred_mapping
     st.session_state.generated_outputs = None
     st.session_state.generated_mapping = None
+    st.session_state.generated_scoring_config = None
 
     for field in CANONICAL_FIELDS:
         st.session_state[f"mapping_{field}"] = inferred_mapping.get(field) or UNMAPPED_LABEL
@@ -136,7 +151,7 @@ def build_outputs(
 
 
 render_page_styles(APP_CONFIG)
-render_config_sidebar(APP_CONFIG)
+APP_CONFIG = render_config_sidebar(APP_CONFIG)
 render_app_header(APP_CONFIG)
 
 if APP_CONFIG.mode == "school":
@@ -205,9 +220,11 @@ if generate_clicked:
 
     st.session_state.generated_outputs = outputs
     st.session_state.generated_mapping = selected_mapping.copy()
+    st.session_state.generated_scoring_config = scoring_config_signature(APP_CONFIG)
 
 outputs = st.session_state.get("generated_outputs")
 generated_mapping = st.session_state.get("generated_mapping")
+generated_scoring_config = st.session_state.get("generated_scoring_config")
 
 if outputs is None:
     st.markdown(
@@ -221,6 +238,14 @@ if selected_mapping != generated_mapping:
     render_validation_summary(
         "Mapping changed after generation",
         ["Click Generate Reports again so the final outputs match the current mapping."],
+        "warning",
+    )
+    st.stop()
+
+if generated_scoring_config != scoring_config_signature(APP_CONFIG):
+    render_validation_summary(
+        "Scoring settings changed after generation",
+        ["Click Generate Reports again so the final outputs match the current sidebar scoring settings."],
         "warning",
     )
     st.stop()
@@ -243,18 +268,18 @@ metric_cols[2].metric("High Performers", len(high_performers))
 metric_cols[3].metric("Low Attendance", len(low_attendance))
 metric_cols[4].metric("Subjects", subject_summary["subject"].nunique() if "subject" in subject_summary else 0)
 
-tabs = st.tabs(
-    [
-        "Cleaned Data",
-        "At-Risk Students",
-        "High-Performing Students",
-        "Summary by Student",
-        "Summary by Subject",
-        "Downloads",
-        "Parent Contacts",
-        "Parent Emails",
-    ]
-)
+tab_names = [
+    "Cleaned Data",
+    "At-Risk Students",
+    "High-Performing Students",
+    "Summary by Student",
+    "Summary by Subject",
+    "Downloads",
+]
+if APP_CONFIG.mode == "school":
+    tab_names.extend(["Parent Contacts", "Parent Emails"])
+
+tabs = st.tabs(tab_names)
 
 with tabs[0]:
     st.dataframe(style_grade_dataframe(cleaned_df), use_container_width=True)
@@ -280,7 +305,10 @@ with tabs[4]:
     st.dataframe(style_grade_dataframe(subject_summary), use_container_width=True)
 
 with tabs[5]:
-    st.caption("Primary exports include the formatted workbook and parent-ready student report package.")
+    if APP_CONFIG.mode == "school":
+        st.caption("Primary exports include the formatted workbook and parent-ready student report package.")
+    else:
+        st.caption("Primary exports include the formatted workbook and student report package.")
     primary_downloads = st.columns(2)
     with primary_downloads[0]:
         st.download_button(
@@ -323,8 +351,9 @@ with tabs[5]:
                 use_container_width=True,
             )
 
-with tabs[6]:
-    render_parent_contacts_section(student_report_files)
+if APP_CONFIG.mode == "school":
+    with tabs[6]:
+        render_parent_contacts_section(student_report_files)
 
-with tabs[7]:
-    render_email_section(student_report_files, app_config=APP_CONFIG)
+    with tabs[7]:
+        render_email_section(student_report_files, app_config=APP_CONFIG)
