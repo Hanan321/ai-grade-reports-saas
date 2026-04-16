@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Yara Sherif - Student Report</title>
+  <style>
+    body {
+      background: #f6f8fb;
+      color: #111827;
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.45;
+      margin: 32px;
+    }
+    header {
+      border-bottom: 2px solid #d9e2ef;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+    }
+    h1 {
+      font-size: 28px;
+      margin: 0 0 4px;
+    }
+    .subtitle {
+      color: #526070;
+      font-size: 14px;
+    }
+    .summary {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      margin: 18px 0 24px;
+    }
+    .metric {
+      background: #f8fafc;
+      border: 1px solid #d7dee8;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .label {
+      color: #526070;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .value {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+    .status-risk {
+      color: #991b1b;
+    }
+    .status-ok {
+      color: #166534;
+    }
+    table {
+      border-collapse: collapse;
+      font-size: 13px;
+      width: 100%;
+    }
+    th {
+      background: #f8fafc;
+      color: #111827;
+      font-weight: 700;
+      text-align: left;
+    }
+    th, td {
+      border: 1px solid #d7dee8;
+      padding: 8px;
+      vertical-align: top;
+    }
+    tr:nth-child(even) {
+      background: #f8fafc;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Yara Sherif</h1>
+    <div class="subtitle">Student progress report for parent or teacher review</div>
+  </header>
+  <section class="summary">
+    <div class="metric"><div class="label">Student ID</div><div class="value">228</div></div>
+    <div class="metric"><div class="label">Grade</div><div class="value">8</div></div>
+    <div class="metric"><div class="label">Average Score</div><div class="value">88.8</div></div>
+    <div class="metric"><div class="label">Average Attendance</div><div class="value">92.0</div></div>
+    <div class="metric"><div class="label">Academic Status</div><div class="value status-ok">On Track</div></div>
+    <div class="metric"><div class="label">Attendance Status</div><div class="value status-ok">Attendance OK</div></div>
+  </section>
+  <h2>Assessment Details</h2>
+  <table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>student_id</th>
+      <th>student_name</th>
+      <th>grade</th>
+      <th>subject</th>
+      <th>test_date</th>
+      <th>homework</th>
+      <th>quizscore</th>
+      <th>exam_score</th>
+      <th>attendance_percent</th>
+      <th>final_score</th>
+      <th>at_risk</th>
+      <th>low_attendance</th>
+      <th>notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>228</td>
+      <td>Yara Sherif</td>
+      <td>8</td>
+      <td>Science</td>
+      <td>2025-01-30</td>
+      <td>89.0</td>
+      <td>87.0</td>
+      <td>90.0</td>
+      <td>92.0</td>
+      <td>88.8</td>
+      <td>False</td>
+      <td>False</td>
+      <td>strong recovery after weak start</td>
+    </tr>
+  </tbody>
+</table>
+</body>
+</html>
