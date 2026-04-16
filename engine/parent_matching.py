@@ -15,6 +15,14 @@ from utils.email_validators import is_valid_email
 
 REQUIRED_CONTACT_COLUMNS = ("student_name", "parent_email")
 CONTACT_COLUMNS = ("student_name", "student_id", "parent_email", "parent_name")
+WIDE_CONTACT_COLUMNS = (
+    "student_name",
+    "student_id",
+    "parent1_name",
+    "parent1_email",
+    "parent2_name",
+    "parent2_email",
+)
 
 
 @dataclass(frozen=True)
@@ -64,6 +72,8 @@ def prepare_parent_contacts(contacts: pd.DataFrame) -> pd.DataFrame:
 
     prepared = contacts.copy()
     prepared.columns = [str(column).strip().lower() for column in prepared.columns]
+    if "parent_email" not in prepared.columns and "parent1_email" in prepared.columns:
+        prepared = _expand_wide_parent_contacts(prepared)
 
     missing = [column for column in REQUIRED_CONTACT_COLUMNS if column not in prepared.columns]
     if missing:
@@ -83,6 +93,32 @@ def prepare_parent_contacts(contacts: pd.DataFrame) -> pd.DataFrame:
     prepared["_normalized_student_id"] = prepared["student_id"].map(normalize_student_id)
     prepared["_valid_parent_email"] = prepared["parent_email"].map(is_valid_email)
     return prepared
+
+
+def _expand_wide_parent_contacts(contacts: pd.DataFrame) -> pd.DataFrame:
+    for column in WIDE_CONTACT_COLUMNS:
+        if column not in contacts.columns:
+            contacts[column] = ""
+
+    rows: list[dict[str, str]] = []
+    for _, row in contacts.iterrows():
+        base = {
+            "student_name": str(row["student_name"]).strip(),
+            "student_id": normalize_student_id(row["student_id"]),
+        }
+        for parent_number in (1, 2):
+            email = str(row[f"parent{parent_number}_email"]).strip()
+            name = str(row[f"parent{parent_number}_name"]).strip()
+            if not email:
+                continue
+            rows.append(
+                {
+                    **base,
+                    "parent_email": email,
+                    "parent_name": name,
+                }
+            )
+    return pd.DataFrame(rows, columns=list(CONTACT_COLUMNS))
 
 
 def match_reports_to_parent_contacts(

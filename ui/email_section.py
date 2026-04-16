@@ -142,7 +142,10 @@ def _load_contacts_ui() -> pd.DataFrame | None:
             key="parent_contacts_upload",
         )
         if uploaded_contacts is None:
-            st.info("Upload a CSV with student_name, optional student_id, parent_email, and optional parent_name.")
+            st.info(
+                "Upload a CSV with student_name, student_id, and either parent1_email/"
+                "parent2_email columns or the older parent_email column."
+            )
         else:
             try:
                 uploaded_contacts = load_parent_contacts(uploaded_contacts)

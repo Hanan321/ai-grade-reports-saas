@@ -19,7 +19,21 @@ def validate_parent_contact(
     if not normalize_student_name(student_name):
         errors.append("Student name cannot be blank.")
     if not is_valid_email(parent_email):
-        errors.append("Parent email must be a valid email address.")
+        errors.append("Parent 1 email must be a valid email address.")
+    return errors
+
+
+def validate_saved_parent_contact(
+    student_id: object,
+    student_name: object,
+    parent1_email: object,
+    parent2_email: object = "",
+) -> list[str]:
+    """Return validation errors for one saved student contact row."""
+
+    errors = validate_parent_contact(student_name, parent1_email, student_id)
+    if str(parent2_email).strip() and not is_valid_email(parent2_email):
+        errors.append("Parent 2 email must be a valid email address when provided.")
     return errors
 
 
@@ -29,6 +43,7 @@ def has_blocking_contact_errors(errors: list[str]) -> bool:
     blocking_messages = (
         "Student ID is required for manual parent contacts.",
         "Student name cannot be blank.",
-        "Parent email must be a valid email address.",
+        "Parent 1 email must be a valid email address.",
+        "Parent 2 email must be a valid email address when provided.",
     )
     return any(error in blocking_messages for error in errors)

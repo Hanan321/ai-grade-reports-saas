@@ -133,21 +133,23 @@ data/parent_contacts.csv
 Maintain this file manually with these columns:
 
 ```csv
-student_name,student_id,parent_email,parent_name
-Ali Ahmed,201,parent.ali@example.com,Ali Ahmed Parent
+student_name,student_id,parent1_name,parent1_email,parent2_name,parent2_email
+Ali Ahmed,201,Ali Ahmed Parent,parent.ali@example.com,Second Parent,second.parent@example.com
 ```
 
 Required columns:
 
 - `student_name`
-- `parent_email`
+- `student_id`
+- `parent1_email`
 
 Optional columns:
 
-- `student_id` is preferred when available because it is the safest match key.
-- `parent_name` is included for clarity in the preview.
+- `parent1_name`
+- `parent2_name`
+- `parent2_email`
 
-You can also upload a parent-contact CSV for the current Streamlit session from the **Parent Emails** tab. That is useful for testing a revised contact list before replacing `data/parent_contacts.csv`.
+You can also upload a parent-contact CSV for the current Streamlit session from the **Parent Emails** tab. Uploaded CSV files may use either the newer `parent1_*` / `parent2_*` columns or the older `parent_email` / `parent_name` columns.
 
 ## Managing Parent Contacts In The App
 
@@ -157,16 +159,18 @@ The form saves:
 
 - `student_id`
 - `student_name`
-- `parent_email`
-- `parent_name`
+- `parent1_name`
+- `parent1_email`
+- `parent2_name`
+- `parent2_email`
 
-`student_id`, `student_name`, and `parent_email` are required for manual parent contact entry. If you save a contact with the same student and the same parent email, the app updates that existing row. If the same student has another parent or guardian with a different email, the app keeps both contacts.
+`student_id`, `student_name`, and `parent1_email` are required for manual parent contact entry. Parent 2 is optional. If you save a contact with the same student ID or normalized student name, the app updates that one student row instead of creating duplicate student rows.
 
 If the current generated reports contain the typed `student_id` for a different student name, the app blocks the save. This prevents a parent email from being attached to the wrong student's report.
 
 The same tab also shows the saved contact table and lets you delete a saved contact.
 
-The **Parent Emails** tab always includes saved contacts from `data/parent_contacts.csv`. You can also add an uploaded parent contacts CSV for the current session. When the same student and same parent email appears in both places, the saved/manual contact from `data/parent_contacts.csv` takes priority over the uploaded CSV row. Different parent emails for the same student are kept as separate recipients.
+The **Parent Emails** tab always includes saved contacts from `data/parent_contacts.csv`. You can also add an uploaded parent contacts CSV for the current session. The app expands `parent1_email` and `parent2_email` into separate recipients for sending. When the same student and same parent email appears in both places, the saved/manual contact from `data/parent_contacts.csv` takes priority over the uploaded CSV row.
 
 The **Parent Emails** tab previews generated reports, not every saved contact. A manually saved contact appears in the email preview only when its `student_id` or normalized `student_name` matches one of the generated student reports. Contacts that do not match the current batch appear in **Saved/uploaded contacts not used in this batch**.
 

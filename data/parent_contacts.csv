@@ -1,6 +1,6 @@
-student_name,student_id,parent_email,parent_name
-Ali Ahmed,201,parent.ali@example.com,Ali Ahmed Parent
-Aisha Ali,202,parent.aisha@example.com,Aisha Ali Parent
-Mohamed Omar,203,parent.mohamed@example.com,Mohamed Omar Parent
-Sara Hassan,204,parent.sara@example.com,Sara Hassan Parent
-Abdel Rahman,205,parent.abdel@example.com,Abdel Rahman Parent
+student_name,student_id,parent1_name,parent1_email,parent2_name,parent2_email
+Ali Ahmed,201,Ali Ahmed Parent,parent.ali@example.com,,
+Aisha Ali,202,Aisha Ali Parent,parent.aisha@example.com,,
+Mohamed Omar,203,Mohamed Omar Parent,parent.mohamed@example.com,,
+Sara Hassan,204,Sara Hassan Parent,parent.sara@example.com,,
+Abdel Rahman,205,Abdel Rahman Parent,parent.abdel@example.com,,

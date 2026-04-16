@@ -48,8 +48,10 @@ def _render_contact_form(contacts: pd.DataFrame, reports: list[StudentReportFile
         col1, col2 = st.columns(2)
         student_id = col1.text_input("Student ID", placeholder="Required")
         student_name = col2.text_input("Student name")
-        parent_email = col1.text_input("Parent email")
-        parent_name = col2.text_input("Parent name", placeholder="Optional")
+        parent1_email = col1.text_input("Parent 1 email")
+        parent1_name = col2.text_input("Parent 1 name", placeholder="Optional")
+        parent2_email = col1.text_input("Parent 2 email", placeholder="Optional")
+        parent2_name = col2.text_input("Parent 2 name", placeholder="Optional")
 
         submitted = st.form_submit_button("Save Parent Contact")
 
@@ -68,8 +70,10 @@ def _render_contact_form(contacts: pd.DataFrame, reports: list[StudentReportFile
         contacts,
         student_id=student_id,
         student_name=student_name,
-        parent_email=parent_email,
-        parent_name=parent_name,
+        parent1_email=parent1_email,
+        parent1_name=parent1_name,
+        parent2_email=parent2_email,
+        parent2_name=parent2_name,
     )
 
     if action == "error":
@@ -107,7 +111,6 @@ def _render_delete_contact(contacts: pd.DataFrame) -> None:
             contacts,
             student_id=selected_row["student_id"],
             student_name=selected_row["student_name"],
-            parent_email=selected_row["parent_email"],
         )
         if deleted:
             save_parent_contacts(updated_contacts)
@@ -120,8 +123,10 @@ def _render_delete_contact(contacts: pd.DataFrame) -> None:
 def _contact_option_label(index: int, row: pd.Series) -> str:
     student_id = str(row["student_id"]).strip() or "no ID"
     student_name = str(row["student_name"]).strip() or "Unnamed student"
-    parent_email = str(row["parent_email"]).strip()
-    return f"{index + 1}. {student_name} ({student_id}) - {parent_email}"
+    parent1_email = str(row["parent1_email"]).strip()
+    parent2_email = str(row["parent2_email"]).strip()
+    emails = ", ".join(email for email in (parent1_email, parent2_email) if email)
+    return f"{index + 1}. {student_name} ({student_id}) - {emails}"
 
 
 def _generated_report_id_conflict(
