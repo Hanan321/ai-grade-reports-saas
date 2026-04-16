@@ -1,0 +1,17 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+.env
+.env.*
+*.log
+students_*_cleaned.csv
+students_*_summary_by_student.csv
+students_*_summary_by_subject.csv
+grade_report_outputs.xlsx
+
