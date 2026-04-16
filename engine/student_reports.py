@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from html import escape
 from io import BytesIO
 import re
@@ -27,17 +28,45 @@ REPORT_COLUMNS: tuple[str, ...] = (
 )
 
 
+@dataclass(frozen=True)
+class StudentReportFile:
+    """One generated parent-facing student report."""
+
+    student_name: str
+    student_id: str
+    filename: str
+    content: bytes
+
+
 def export_student_reports_zip(cleaned: pd.DataFrame) -> bytes:
     """Create a ZIP file containing one HTML report per student."""
 
     output = BytesIO()
     with ZipFile(output, mode="w", compression=ZIP_DEFLATED) as archive:
-        for index, (student_key, student_df) in enumerate(_student_groups(cleaned), start=1):
-            report_html = build_student_report_html(student_df)
-            filename = _student_report_filename(student_df, student_key, index)
-            archive.writestr(filename, report_html)
+        for report in build_student_report_files(cleaned):
+            archive.writestr(report.filename, report.content)
 
     return output.getvalue()
+
+
+def build_student_report_files(cleaned: pd.DataFrame) -> list[StudentReportFile]:
+    """Build one report file object per student."""
+
+    reports: list[StudentReportFile] = []
+    for index, (student_key, student_df) in enumerate(_student_groups(cleaned), start=1):
+        report_html = build_student_report_html(student_df)
+        filename = _student_report_filename(student_df, student_key, index)
+        student_name = _first_present(student_df, "student_name", "Unknown Student")
+        student_id = _first_present(student_df, "student_id", "")
+        reports.append(
+            StudentReportFile(
+                student_name=str(student_name),
+                student_id="" if pd.isna(student_id) else str(student_id),
+                filename=filename,
+                content=report_html.encode("utf-8"),
+            )
+        )
+    return reports
 
 
 def build_student_report_html(student_df: pd.DataFrame) -> str:

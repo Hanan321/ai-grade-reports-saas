@@ -13,6 +13,9 @@ The app currently:
 - flags low attendance and at-risk students
 - builds student and subject summaries
 - exports cleaned CSV files and an Excel workbook
+- generates one HTML report per student
+- matches generated reports to saved parent contacts
+- sends matched parent report emails in one batch
 
 ## Project Structure
 
@@ -23,8 +26,15 @@ The app currently:
 │   ├── processing.py
 │   ├── summaries.py
 │   ├── exports.py
+│   ├── parent_matching.py
+│   ├── email_delivery.py
 │   └── schemas.py
+├── data/
+│   └── parent_contacts.csv
+├── ui/
+│   └── email_section.py
 ├── utils/
+│   ├── email_validators.py
 │   ├── validators.py
 │   └── helpers.py
 ├── sample_data/
@@ -91,6 +101,119 @@ Try the included sample file:
 sample_data/students_sample_raw.csv
 ```
 
+## Parent Report Email Workflow
+
+After uploading a grade file and reviewing the column mapping, click **Generate Reports**. The app creates all student HTML reports at once. Open the **Parent Emails** tab to preview the parent-contact match table before any email is sent.
+
+The preview includes:
+
+- student name
+- student ID when available
+- saved parent email
+- parent name when available
+- matched report filename
+- match result
+- send eligibility
+- skip reason
+
+Click **Send All Parent Reports** only after the preview looks correct. The app sends only rows marked as eligible. Unmatched students, duplicate matches, and invalid parent emails are skipped.
+
+## Maintaining Parent Contacts
+
+The app-managed contact file lives here:
+
+```text
+data/parent_contacts.csv
+```
+
+Maintain this file manually with these columns:
+
+```csv
+student_name,student_id,parent_email,parent_name
+Ali Ahmed,201,parent.ali@example.com,Ali Ahmed Parent
+```
+
+Required columns:
+
+- `student_name`
+- `parent_email`
+
+Optional columns:
+
+- `student_id` is preferred when available because it is the safest match key.
+- `parent_name` is included for clarity in the preview.
+
+You can also upload a parent-contact CSV for the current Streamlit session from the **Parent Emails** tab. That is useful for testing a revised contact list before replacing `data/parent_contacts.csv`.
+
+## Matching Rules
+
+Parent contact matching is deterministic and uses your saved contact data as the source of truth.
+
+- The app does not guess parent emails.
+- The app does not use AI to infer parent emails.
+- If a generated report has `student_id` and the parent contact file has the same `student_id`, the app matches by `student_id`.
+- If no ID match is available, the app falls back to normalized `student_name`.
+- Name normalization trims extra spacing and ignores case differences.
+- If no match is found, the row is marked `unmatched` and is not sent.
+- If multiple saved contacts match the same report, the row is marked as a duplicate and is not sent until the contact data is fixed.
+- If the matched parent email is invalid, the row is skipped.
+
+## Email Configuration
+
+Configure SMTP with environment variables or Streamlit secrets. Do not hardcode passwords in the repo.
+
+Required:
+
+```text
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SENDER_EMAIL=teacher@example.com
+```
+
+Usually required by your email provider:
+
+```text
+SMTP_USERNAME=teacher@example.com
+SMTP_PASSWORD=your-app-password
+SMTP_USE_TLS=true
+SMTP_USE_SSL=false
+```
+
+For safe testing:
+
+```text
+TEST_PARENT_REPORT_EMAIL=you@example.com
+```
+
+On Streamlit Community Cloud, add the same keys in app secrets. Locally, you can export environment variables before starting Streamlit:
+
+```bash
+export SMTP_HOST=smtp.example.com
+export SMTP_PORT=587
+export SMTP_SENDER_EMAIL=teacher@example.com
+export SMTP_USERNAME=teacher@example.com
+export SMTP_PASSWORD=your-app-password
+export SMTP_USE_TLS=true
+export SMTP_USE_SSL=false
+export TEST_PARENT_REPORT_EMAIL=you@example.com
+streamlit run app.py
+```
+
+## Testing Batch Sending Safely
+
+Use **Send Test Batch to Me** before sending real parent emails. Test mode sends up to three matched reports to `TEST_PARENT_REPORT_EMAIL` instead of the saved parent addresses. Test messages include `[TEST]` in the subject and show the original parent recipient in the body.
+
+Recommended safe flow:
+
+1. Upload the grade file.
+2. Review and fix column mapping.
+3. Click **Generate Reports**.
+4. Open **Parent Emails**.
+5. Confirm the preview table.
+6. Click **Send Test Batch to Me**.
+7. Check the email body and HTML attachments.
+8. Click **Send All Parent Reports** when ready.
+
 ## Run Tests
 
 ```bash
@@ -138,3 +261,4 @@ streamlit run app.py --server.port $PORT --server.address 0.0.0.0
 - Date parsing uses pandas with `dayfirst=False`, matching the notebook's assumption.
 - Missing score values count as zero in the final score, matching the notebook.
 - Missing attendance does not automatically trigger `low_attendance`.
+- Batch parent email sending requires SMTP configuration from environment variables or Streamlit secrets.

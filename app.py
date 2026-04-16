@@ -11,8 +11,9 @@ from engine.filters import get_at_risk_students, get_high_performing_students, g
 from engine.mapping import apply_column_mapping, infer_column_mapping
 from engine.processing import load_data, process_mapped_grade_report
 from engine.schemas import CANONICAL_FIELDS, DEFAULT_CONFIG
-from engine.student_reports import export_student_reports_zip
+from engine.student_reports import build_student_report_files, export_student_reports_zip
 from engine.summaries import build_student_summary, build_subject_summary
+from ui.email_section import render_email_section
 from utils.helpers import display_dataframe, style_grade_dataframe, style_high_performer_dataframe
 from utils.validators import build_quality_warnings, validate_column_mapping
 
@@ -292,6 +293,7 @@ def build_outputs(raw_df, mapping: dict[str, str | None]) -> dict[str, object]:
     at_risk = get_at_risk_students(cleaned_df)
     high_performers = get_high_performing_students(cleaned_df)
     low_attendance = get_low_attendance_students(cleaned_df)
+    student_report_files = build_student_report_files(cleaned_df)
 
     return {
         "cleaned_df": cleaned_df,
@@ -300,6 +302,7 @@ def build_outputs(raw_df, mapping: dict[str, str | None]) -> dict[str, object]:
         "at_risk": at_risk,
         "high_performers": high_performers,
         "low_attendance": low_attendance,
+        "student_report_files": student_report_files,
         "warnings": build_quality_warnings(cleaned_df),
     }
 
@@ -341,7 +344,7 @@ if mapping_errors:
     render_validation_summary("Before generating, fix these required mapping items", mapping_errors, "error")
 
 generate_clicked = st.button(
-    "Generate Report",
+    "Generate Reports",
     type="primary",
     disabled=bool(mapping_errors),
     use_container_width=False,
@@ -363,7 +366,7 @@ generated_mapping = st.session_state.get("generated_mapping")
 if outputs is None:
     st.markdown(
         '<p class="muted-note">No report has been generated yet. Review the mapping, then click '
-        "<strong>Generate Report</strong>.</p>",
+        "<strong>Generate Reports</strong>.</p>",
         unsafe_allow_html=True,
     )
     st.stop()
@@ -371,7 +374,7 @@ if outputs is None:
 if selected_mapping != generated_mapping:
     render_validation_summary(
         "Mapping changed after generation",
-        ["Click Generate Report again so the final outputs match the current mapping."],
+        ["Click Generate Reports again so the final outputs match the current mapping."],
         "warning",
     )
     st.stop()
@@ -385,6 +388,7 @@ subject_summary = outputs["subject_summary"]
 at_risk = outputs["at_risk"]
 high_performers = outputs["high_performers"]
 low_attendance = outputs["low_attendance"]
+student_report_files = outputs["student_report_files"]
 
 metric_cols = st.columns(5)
 metric_cols[0].metric("Rows Processed", len(cleaned_df))
@@ -401,6 +405,7 @@ tabs = st.tabs(
         "Summary by Student",
         "Summary by Subject",
         "Downloads",
+        "Parent Emails",
     ]
 )
 
@@ -465,3 +470,6 @@ with tabs[5]:
                 mime="text/csv",
                 use_container_width=True,
             )
+
+with tabs[6]:
+    render_email_section(student_report_files)
