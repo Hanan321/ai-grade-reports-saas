@@ -77,12 +77,16 @@ def upsert_parent_contact(
         )
         return normalized, "error", errors
 
-    matching_indexes = _matching_contact_indexes(normalized, row["student_id"], row["student_name"])
+    matching_index = _matching_parent_contact_index(
+        normalized,
+        row["student_id"],
+        row["student_name"],
+        row["parent_email"],
+    )
 
-    if matching_indexes:
-        keep_indexes = [index for index in normalized.index if index not in matching_indexes[1:]]
-        updated = normalized.loc[keep_indexes].copy()
-        updated.loc[matching_indexes[0], list(CONTACT_COLUMNS)] = [row[column] for column in CONTACT_COLUMNS]
+    if matching_index is not None:
+        updated = normalized.copy()
+        updated.loc[matching_index, list(CONTACT_COLUMNS)] = [row[column] for column in CONTACT_COLUMNS]
         return updated.reset_index(drop=True), "updated", errors
 
     updated = pd.concat([normalized, pd.DataFrame([row])], ignore_index=True)
@@ -93,18 +97,20 @@ def delete_parent_contact(
     contacts: pd.DataFrame,
     student_id: object,
     student_name: object,
+    parent_email: object = "",
 ) -> tuple[pd.DataFrame, bool]:
-    """Delete contacts matching the student ID or normalized student name."""
+    """Delete one contact matching the student and parent email."""
 
     normalized = normalize_contact_columns(contacts)
-    matching_indexes = _matching_contact_indexes(
+    matching_index = _matching_parent_contact_index(
         normalized,
         normalize_student_id(student_id),
         str(student_name).strip(),
+        str(parent_email).strip(),
     )
-    if not matching_indexes:
+    if matching_index is None:
         return normalized, False
-    updated = normalized.drop(index=matching_indexes).reset_index(drop=True)
+    updated = normalized.drop(index=matching_index).reset_index(drop=True)
     return updated, True
 
 
@@ -123,13 +129,14 @@ def merge_parent_contacts(
     merged = uploaded.copy()
 
     for _, row in saved.iterrows():
-        matching_indexes = _matching_contact_indexes(
+        matching_index = _matching_parent_contact_index(
             merged,
             normalize_student_id(row["student_id"]),
             str(row["student_name"]).strip(),
+            str(row["parent_email"]).strip(),
         )
-        if matching_indexes:
-            merged = merged.drop(index=matching_indexes).reset_index(drop=True)
+        if matching_index is not None:
+            merged = merged.drop(index=matching_index).reset_index(drop=True)
         merged = pd.concat(
             [merged, pd.DataFrame([{column: row[column] for column in CONTACT_COLUMNS}])],
             ignore_index=True,
@@ -155,6 +162,28 @@ def _matching_contact_indexes(
         elif normalized_name and row_name == normalized_name:
             matching_indexes.append(index)
     return matching_indexes
+
+
+def _matching_parent_contact_index(
+    contacts: pd.DataFrame,
+    student_id: str,
+    student_name: str,
+    parent_email: str,
+) -> int | None:
+    normalized_name = normalize_student_name(student_name)
+    normalized_email = str(parent_email).strip().lower()
+    for index, row in contacts.iterrows():
+        row_email = str(row["parent_email"]).strip().lower()
+        if row_email != normalized_email:
+            continue
+
+        row_id = normalize_student_id(row["student_id"])
+        row_name = normalize_student_name(row["student_name"])
+        if student_id and row_id == student_id:
+            return index
+        if normalized_name and row_name == normalized_name:
+            return index
+    return None
 
 
 def _student_id_conflict(

@@ -110,7 +110,7 @@ def match_reports_to_parent_contacts(
             match_rows = name_groups[name_key]
             match_basis = "student_name"
 
-        matches.append(_build_match(report, student_name, student_id, match_rows, match_basis))
+        matches.extend(_build_matches(report, student_name, student_id, match_rows, match_basis))
 
     return matches
 
@@ -149,63 +149,67 @@ def _build_group_lookup(
     return groups
 
 
-def _build_match(
+def _build_matches(
     report: StudentReportFile,
     student_name: str,
     student_id: str,
     match_rows: list[pd.Series],
     match_basis: str,
-) -> ReportParentMatch:
+) -> list[ReportParentMatch]:
     if not match_rows:
-        return ReportParentMatch(
-            student_name=student_name,
-            student_id=student_id,
-            parent_email="",
-            parent_name="",
-            report_filename=report.filename,
-            match_result="unmatched",
-            send_eligible=False,
-            skip_reason="No saved parent contact matched this report.",
-            report=report,
+        return [
+            ReportParentMatch(
+                student_name=student_name,
+                student_id=student_id,
+                parent_email="",
+                parent_name="",
+                report_filename=report.filename,
+                match_result="unmatched",
+                send_eligible=False,
+                skip_reason="No saved parent contact matched this report.",
+                report=report,
+            )
+        ]
+
+    matches: list[ReportParentMatch] = []
+    seen_emails: set[str] = set()
+    for row in match_rows:
+        parent_email = str(row["parent_email"]).strip()
+        normalized_email = parent_email.lower()
+        parent_name = str(row["parent_name"]).strip()
+
+        if normalized_email in seen_emails:
+            continue
+        seen_emails.add(normalized_email)
+
+        if not is_valid_email(parent_email):
+            matches.append(
+                ReportParentMatch(
+                    student_name=student_name,
+                    student_id=student_id,
+                    parent_email=parent_email,
+                    parent_name=parent_name,
+                    report_filename=report.filename,
+                    match_result="invalid_email",
+                    send_eligible=False,
+                    skip_reason="Matched contact has an invalid parent email.",
+                    report=report,
+                )
+            )
+            continue
+
+        matches.append(
+            ReportParentMatch(
+                student_name=student_name,
+                student_id=student_id,
+                parent_email=parent_email,
+                parent_name=parent_name,
+                report_filename=report.filename,
+                match_result=f"matched_by_{match_basis}",
+                send_eligible=True,
+                skip_reason="",
+                report=report,
+            )
         )
 
-    if len(match_rows) > 1:
-        emails = ", ".join(sorted({str(row["parent_email"]).strip() for row in match_rows}))
-        return ReportParentMatch(
-            student_name=student_name,
-            student_id=student_id,
-            parent_email=emails,
-            parent_name="",
-            report_filename=report.filename,
-            match_result=f"duplicate_{match_basis}",
-            send_eligible=False,
-            skip_reason="Multiple saved parent contacts matched this report.",
-            report=report,
-        )
-
-    row = match_rows[0]
-    parent_email = str(row["parent_email"]).strip()
-    if not is_valid_email(parent_email):
-        return ReportParentMatch(
-            student_name=student_name,
-            student_id=student_id,
-            parent_email=parent_email,
-            parent_name=str(row["parent_name"]).strip(),
-            report_filename=report.filename,
-            match_result="invalid_email",
-            send_eligible=False,
-            skip_reason="Matched contact has an invalid parent email.",
-            report=report,
-        )
-
-    return ReportParentMatch(
-        student_name=student_name,
-        student_id=student_id,
-        parent_email=parent_email,
-        parent_name=str(row["parent_name"]).strip(),
-        report_filename=report.filename,
-        match_result=f"matched_by_{match_basis}",
-        send_eligible=True,
-        skip_reason="",
-        report=report,
-    )
+    return matches

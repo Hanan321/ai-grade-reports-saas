@@ -50,19 +50,36 @@ def test_falls_back_to_normalized_student_name():
     assert matches[0].match_result == "matched_by_student_name"
 
 
-def test_duplicate_matches_are_not_sendable():
+def test_multiple_parent_contacts_for_same_student_are_sendable():
     reports = [_report("Ali Ahmed", "", "ali.html")]
     contacts = pd.DataFrame(
         [
-            {"student_name": "Ali Ahmed", "parent_email": "one@example.com"},
-            {"student_name": " ali  ahmed ", "parent_email": "two@example.com"},
+            {"student_name": "Ali Ahmed", "parent_email": "mother@example.com", "parent_name": "Mother"},
+            {"student_name": " ali  ahmed ", "parent_email": "father@example.com", "parent_name": "Father"},
         ]
     )
 
     matches = match_reports_to_parent_contacts(reports, contacts)
 
-    assert matches[0].send_eligible is False
-    assert matches[0].match_result == "duplicate_student_name"
+    assert len(matches) == 2
+    assert all(match.send_eligible for match in matches)
+    assert {match.parent_email for match in matches} == {"mother@example.com", "father@example.com"}
+
+
+def test_duplicate_same_parent_email_is_deduped_for_one_student():
+    reports = [_report("Ali Ahmed", "", "ali.html")]
+    contacts = pd.DataFrame(
+        [
+            {"student_name": "Ali Ahmed", "parent_email": "parent@example.com", "parent_name": "One"},
+            {"student_name": " ali  ahmed ", "parent_email": "parent@example.com", "parent_name": "Two"},
+        ]
+    )
+
+    matches = match_reports_to_parent_contacts(reports, contacts)
+
+    assert len(matches) == 1
+    assert matches[0].send_eligible is True
+    assert matches[0].parent_email == "parent@example.com"
 
 
 def test_unmatched_report_is_marked_and_displayed():

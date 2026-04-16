@@ -120,7 +120,7 @@ The preview includes:
 - send eligibility
 - skip reason
 
-Click **Send All Parent Reports** only after the preview looks correct. The main email table shows only rows marked as eligible with a valid matched parent email. Unmatched students, duplicate matches, and invalid parent emails are moved into **Skipped reports without sendable parent email** and are not sent.
+Click **Send All Parent Reports** only after the preview looks correct. The main email table shows only rows marked as eligible with a valid matched parent email. Unmatched students and invalid parent emails are moved into **Skipped reports without sendable parent email** and are not sent.
 
 ## Maintaining Parent Contacts
 
@@ -160,13 +160,13 @@ The form saves:
 - `parent_email`
 - `parent_name`
 
-`student_id`, `student_name`, and `parent_email` are required for manual parent contact entry. If you save a contact with the same `student_id` or normalized `student_name` as an existing saved contact, the app updates the existing row instead of creating an obvious duplicate.
+`student_id`, `student_name`, and `parent_email` are required for manual parent contact entry. If you save a contact with the same student and the same parent email, the app updates that existing row. If the same student has another parent or guardian with a different email, the app keeps both contacts.
 
 If the current generated reports contain the typed `student_id` for a different student name, the app blocks the save. This prevents a parent email from being attached to the wrong student's report.
 
 The same tab also shows the saved contact table and lets you delete a saved contact.
 
-The **Parent Emails** tab always includes saved contacts from `data/parent_contacts.csv`. You can also add an uploaded parent contacts CSV for the current session. When the same student appears in both places, the saved/manual contact from `data/parent_contacts.csv` takes priority over the uploaded CSV row.
+The **Parent Emails** tab always includes saved contacts from `data/parent_contacts.csv`. You can also add an uploaded parent contacts CSV for the current session. When the same student and same parent email appears in both places, the saved/manual contact from `data/parent_contacts.csv` takes priority over the uploaded CSV row. Different parent emails for the same student are kept as separate recipients.
 
 The **Parent Emails** tab previews generated reports, not every saved contact. A manually saved contact appears in the email preview only when its `student_id` or normalized `student_name` matches one of the generated student reports. Contacts that do not match the current batch appear in **Saved/uploaded contacts not used in this batch**.
 
@@ -180,7 +180,8 @@ Parent contact matching is deterministic and uses your saved contact data as the
 - If no ID match is available, the app falls back to normalized `student_name`.
 - Name normalization trims extra spacing and ignores case differences.
 - If no match is found, the row is marked `unmatched` and is not sent.
-- If multiple saved contacts match the same report, the row is marked as a duplicate and is not sent until the contact data is fixed.
+- If multiple saved contacts with different parent emails match the same report, each parent email gets its own sendable row.
+- If the same parent email is duplicated for one student, the app dedupes it so only one email is sent.
 - If the matched parent email is invalid, the row is skipped.
 
 ## Email Configuration

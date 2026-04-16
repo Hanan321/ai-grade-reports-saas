@@ -107,6 +107,7 @@ def _render_delete_contact(contacts: pd.DataFrame) -> None:
             contacts,
             student_id=selected_row["student_id"],
             student_name=selected_row["student_name"],
+            parent_email=selected_row["parent_email"],
         )
         if deleted:
             save_parent_contacts(updated_contacts)
