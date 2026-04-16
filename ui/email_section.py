@@ -18,6 +18,8 @@ from engine.parent_matching import (
     load_parent_contacts,
     match_reports_to_parent_contacts,
     matches_to_dataframe,
+    normalize_student_id,
+    normalize_student_name,
 )
 from engine.report_files import StudentReportFile
 from utils.email_validators import is_valid_email
@@ -57,6 +59,7 @@ def render_email_section(reports: list[StudentReportFile]) -> None:
     metric_cols[3].metric("Skipped Rows", skipped_count)
 
     st.dataframe(preview_df, use_container_width=True)
+    _render_contacts_not_used_in_batch(contacts_df, reports)
 
     subject_template = st.text_input("Email subject", value=DEFAULT_SUBJECT_TEMPLATE)
     body_template = st.text_area("Email body", value=DEFAULT_BODY_TEMPLATE, height=180)
@@ -148,6 +151,50 @@ def _load_contacts_ui() -> pd.DataFrame | None:
     metric_cols[1].metric("Uploaded Contacts", 0 if uploaded_contacts is None else len(uploaded_contacts))
     metric_cols[2].metric("Combined Contacts", len(combined_contacts))
     return combined_contacts
+
+
+def _render_contacts_not_used_in_batch(
+    contacts_df: pd.DataFrame,
+    reports: list[StudentReportFile],
+) -> None:
+    unused_contacts = _contacts_not_matching_reports(contacts_df, reports)
+    if unused_contacts.empty:
+        return
+
+    with st.expander("Saved/uploaded contacts not used in this batch"):
+        st.caption(
+            "These contacts are saved or uploaded, but they do not match any generated "
+            "student report by student ID or normalized student name."
+        )
+        st.dataframe(unused_contacts, use_container_width=True)
+
+
+def _contacts_not_matching_reports(
+    contacts_df: pd.DataFrame,
+    reports: list[StudentReportFile],
+) -> pd.DataFrame:
+    report_ids = {
+        normalize_student_id(report.student_id)
+        for report in reports
+        if normalize_student_id(report.student_id)
+    }
+    report_names = {
+        normalize_student_name(report.student_name)
+        for report in reports
+        if normalize_student_name(report.student_name)
+    }
+    unused_rows = []
+
+    for _, row in contacts_df.iterrows():
+        contact_id = normalize_student_id(row["student_id"])
+        contact_name = normalize_student_name(row["student_name"])
+        if (contact_id and contact_id in report_ids) or (contact_name and contact_name in report_names):
+            continue
+        unused_rows.append(row)
+
+    if not unused_rows:
+        return pd.DataFrame(columns=contacts_df.columns)
+    return pd.DataFrame(unused_rows, columns=contacts_df.columns)
 
 
 def _render_email_config_ui() -> tuple[SmtpConfig | None, str, list[str]]:

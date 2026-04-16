@@ -68,6 +68,15 @@ def upsert_parent_contact(
         "parent_email": str(parent_email).strip(),
         "parent_name": str(parent_name).strip(),
     }
+    id_conflict = _student_id_conflict(normalized, row["student_id"], row["student_name"])
+    if id_conflict is not None:
+        conflict_name = id_conflict["student_name"]
+        errors.append(
+            f"Student ID {row['student_id']} is already saved for {conflict_name}. "
+            "Use the correct student ID or update that existing contact."
+        )
+        return normalized, "error", errors
+
     matching_indexes = _matching_contact_indexes(normalized, row["student_id"], row["student_name"])
 
     if matching_indexes:
@@ -146,3 +155,20 @@ def _matching_contact_indexes(
         elif normalized_name and row_name == normalized_name:
             matching_indexes.append(index)
     return matching_indexes
+
+
+def _student_id_conflict(
+    contacts: pd.DataFrame,
+    student_id: str,
+    student_name: str,
+) -> pd.Series | None:
+    if not student_id:
+        return None
+
+    normalized_name = normalize_student_name(student_name)
+    for _, row in contacts.iterrows():
+        row_id = normalize_student_id(row["student_id"])
+        row_name = normalize_student_name(row["student_name"])
+        if row_id == student_id and row_name != normalized_name:
+            return row
+    return None

@@ -12,9 +12,11 @@ from engine.parent_contacts import (
     save_parent_contacts,
     upsert_parent_contact,
 )
+from engine.parent_matching import normalize_student_id, normalize_student_name
+from engine.report_files import StudentReportFile
 
 
-def render_parent_contacts_section() -> None:
+def render_parent_contacts_section(reports: list[StudentReportFile]) -> None:
     """Render manual parent contact entry and management controls."""
 
     st.subheader("Manage Parent Contacts")
@@ -25,7 +27,7 @@ def render_parent_contacts_section() -> None:
     st.caption(f"Saved contacts file: `{SAVED_PARENT_CONTACTS_PATH}`")
 
     contacts = load_saved_parent_contacts()
-    _render_contact_form(contacts)
+    _render_contact_form(contacts, reports)
     contacts = load_saved_parent_contacts()
 
     st.markdown("**Saved Parent Contacts**")
@@ -36,8 +38,12 @@ def render_parent_contacts_section() -> None:
         _render_delete_contact(contacts)
 
 
-def _render_contact_form(contacts: pd.DataFrame) -> None:
+def _render_contact_form(contacts: pd.DataFrame, reports: list[StudentReportFile]) -> None:
     st.markdown("**Add Or Update Contact**")
+    st.caption(
+        "The student ID and name should match a generated report. If the ID belongs to "
+        "another generated student, the app will block the save."
+    )
     with st.form("parent_contact_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         student_id = col1.text_input("Student ID", placeholder="Optional, but preferred")
@@ -48,6 +54,14 @@ def _render_contact_form(contacts: pd.DataFrame) -> None:
         submitted = st.form_submit_button("Save Parent Contact")
 
     if not submitted:
+        return
+
+    report_conflict = _generated_report_id_conflict(reports, student_id, student_name)
+    if report_conflict:
+        st.error(
+            f"Student ID {normalize_student_id(student_id)} belongs to {report_conflict} "
+            "in the generated reports. Use the correct student ID for this student."
+        )
         return
 
     updated_contacts, action, messages = upsert_parent_contact(
@@ -110,3 +124,21 @@ def _contact_option_label(index: int, row: pd.Series) -> str:
     student_name = str(row["student_name"]).strip() or "Unnamed student"
     parent_email = str(row["parent_email"]).strip()
     return f"{index + 1}. {student_name} ({student_id}) - {parent_email}"
+
+
+def _generated_report_id_conflict(
+    reports: list[StudentReportFile],
+    student_id: object,
+    student_name: object,
+) -> str:
+    typed_id = normalize_student_id(student_id)
+    typed_name = normalize_student_name(student_name)
+    if not typed_id:
+        return ""
+
+    for report in reports:
+        report_id = normalize_student_id(report.student_id)
+        report_name = normalize_student_name(report.student_name)
+        if report_id == typed_id and report_name != typed_name:
+            return report.student_name
+    return ""

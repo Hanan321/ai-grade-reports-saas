@@ -48,6 +48,32 @@ def test_upsert_updates_existing_contact_by_student_id():
     assert contacts.loc[0, "parent_email"] == "new@example.com"
 
 
+def test_upsert_rejects_student_id_used_by_different_student_name():
+    initial = pd.DataFrame(
+        [
+            {
+                "student_name": "Ali Ahmed",
+                "student_id": "201",
+                "parent_email": "ali@example.com",
+                "parent_name": "Ali Parent",
+            }
+        ]
+    )
+
+    contacts, action, messages = upsert_parent_contact(
+        initial,
+        student_id="201",
+        student_name="Different Student",
+        parent_email="different@example.com",
+        parent_name="Different Parent",
+    )
+
+    assert action == "error"
+    assert len(contacts) == 1
+    assert contacts.loc[0, "student_name"] == "Ali Ahmed"
+    assert any("Student ID 201 is already saved for Ali Ahmed" in message for message in messages)
+
+
 def test_upsert_rejects_invalid_email():
     contacts, action, messages = upsert_parent_contact(
         pd.DataFrame(),

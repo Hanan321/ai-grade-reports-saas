@@ -475,7 +475,7 @@ with tabs[5]:
             )
 
 with tabs[6]:
-    render_parent_contacts_section()
+    render_parent_contacts_section(student_report_files)
 
 with tabs[7]:
     render_email_section(student_report_files)

@@ -162,9 +162,13 @@ The form saves:
 
 `student_name` and `parent_email` are required. `student_id` is optional, but recommended because it gives the safest match. If you save a contact with the same `student_id` or normalized `student_name` as an existing saved contact, the app updates the existing row instead of creating an obvious duplicate.
 
+If the current generated reports contain the typed `student_id` for a different student name, the app blocks the save. This prevents a parent email from being attached to the wrong student's report.
+
 The same tab also shows the saved contact table and lets you delete a saved contact.
 
 The **Parent Emails** tab always includes saved contacts from `data/parent_contacts.csv`. You can also add an uploaded parent contacts CSV for the current session. When the same student appears in both places, the saved/manual contact from `data/parent_contacts.csv` takes priority over the uploaded CSV row.
+
+The **Parent Emails** tab previews generated reports, not every saved contact. A manually saved contact appears in the email preview only when its `student_id` or normalized `student_name` matches one of the generated student reports. Contacts that do not match the current batch appear in **Saved/uploaded contacts not used in this batch**.
 
 ## Matching Rules
 
