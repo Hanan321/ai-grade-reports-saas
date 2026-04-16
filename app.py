@@ -45,7 +45,16 @@ def render_page_styles() -> None:
             --warning: #9a6700;
         }
         .stApp {
-            background: var(--app-bg);
+            background:
+                linear-gradient(
+                    rgba(246, 248, 251, 0.90),
+                    rgba(246, 248, 251, 0.90)
+                ),
+                url("https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1800&q=80");
+            background-attachment: fixed;
+            background-color: var(--app-bg);
+            background-position: center;
+            background-size: cover;
             color: var(--text);
         }
         [data-testid="stHeader"] {
