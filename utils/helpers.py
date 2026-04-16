@@ -24,13 +24,13 @@ def style_grade_dataframe(df: pd.DataFrame, max_rows: int = 100):
 
     score_columns = [column for column in ("final_score", "avg_final_score") if column in preview.columns]
     if score_columns:
-        styled = styled.applymap(_score_style, subset=score_columns)
+        styled = _map_cell_styles(styled, _score_style, subset=score_columns)
 
     attendance_columns = [
         column for column in ("attendance_percent", "avg_attendance") if column in preview.columns
     ]
     if attendance_columns:
-        styled = styled.applymap(_attendance_style, subset=attendance_columns)
+        styled = _map_cell_styles(styled, _attendance_style, subset=attendance_columns)
 
     if "at_risk" in preview.columns or "any_risk" in preview.columns:
         styled = styled.apply(_risk_row_style, axis=1)
@@ -66,6 +66,14 @@ def _base_light_table_style(styler):
             },
         ]
     )
+
+
+def _map_cell_styles(styler, style_func, subset: list[str]):
+    """Apply cell-level styles across pandas Styler versions."""
+
+    if hasattr(styler, "map"):
+        return styler.map(style_func, subset=subset)
+    return styler.applymap(style_func, subset=subset)
 
 
 def _score_style(value: object) -> str:
